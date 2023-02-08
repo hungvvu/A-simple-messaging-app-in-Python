@@ -10,5 +10,9 @@ s.listen(5) #  wait for client connection.
 while True:
     c, addr = s.accept() # establish connection with client.
     print('Got connection from', addr)
-    c.send('Hello World!'.encode())
+    test_str = c.recv(1024).decode()
+    if (test_str != ""):
+        c.send("Yes, I'm here!".encode())
+        print("Text from client: " + test_str)
+    # c.send('Hello World!'.encode())
     c.close() # close the connection
