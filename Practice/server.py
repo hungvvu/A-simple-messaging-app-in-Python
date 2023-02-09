@@ -5,6 +5,25 @@ import time
 HEADER_SIZE = 10 # the length of the message header
 BUFFER_SIZE = 10
 
+# Functions
+def send_file(s: socket, c: socket, filedir: str):
+  # read a photo from a file as binary
+    f = open(filedir, 'rb')
+    l = f.read(1024)
+    # send the photo
+    while (l):
+        c.send(l)
+        l = f.read(1024)
+    f.close()
+    # c.send('done'.encode())
+    
+    # conf = ''
+    # # wait for confirmation from the client
+    # while conf == '':
+    #     conf = c.recv(20).decode()
+    # print("here")
+    # # print out confirmation
+    # print("Text from client: " + conf)
 
 s = socket.socket()
 host = socket.gethostname() # get local machine name
@@ -36,11 +55,11 @@ while True:
 
         # if (len(full_msg)-HEADER_SIZE == mLen): # if we got the full message already
         # print("Text from client: " + full_msg[HEADER_SIZE:])
-    # read a photo from a file as binary
-    with open('resources/potato.jpg', 'rb') as f:
-        data = f.read()
-        c.sendfile(f)
-        f.close
+    
+    send_file(s, c, 'resources/potato.jpg')
+    c.close()
+    
+        
 
     # # send the photo to the client
     # msg = str(data.decode('utf-8'))

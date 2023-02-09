@@ -5,6 +5,20 @@ import time
 BUFFER_SIZE = 10
 HEADER_SIZE = 10
 
+# Functions
+def recv_file(s: socket, filedir: str):
+    f = open(filedir,'wb') #open in binary
+    l = s.recv(1024)
+
+    while (l):
+        f.write(l)
+        l = s.recv(1024)
+    f.close
+
+    s.send('Nice potato.'.encode())
+
+
+
 s = socket.socket()
 host = socket.gethostname() # get the server host name
 port = 12345 # the port of the server
@@ -22,12 +36,14 @@ s.connect((host, port)) # connect to the server
 full_msg = ''
 new_msg = True
 
-while True:
-    msg = s.recv(20500)
+stop = False
+while not stop:
+    # msg = s.recv(20500)
 
-    # reminder 
-    with open('received.jpeg', 'wb') as f:
-        f.write(msg)
+    recv_file(s, 'received.jpeg')
+    s.close()
+
+    stop = True
 
     # # get the message length from the header
     # if new_msg:
