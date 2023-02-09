@@ -1,6 +1,8 @@
 #!/usr/bin/python# This is client.py file
 import socket
 import time
+import sys
+import errno
 
 BUFFER_SIZE = 10
 HEADER_SIZE = 10
@@ -19,6 +21,77 @@ def recv_file(s: socket, filedir: str):
 
 
 
+IP = "127.0.0.1"
+PORT = 12345
+my_username = input("Username: ")
+
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+client.connect((IP, PORT))
+
+# Set connection to non-blocking
+client.setblocking(False)
+
+# create the username for this client and send it to the server
+username = my_username.encode()
+username_header = f"{len(username):<{HEADER_SIZE}}".encode()
+client.send(username_header + username)
+
+
+while True:
+
+    # message input from the user
+    message = input(f'{my_username} > ')
+
+    # check if the message is empty, send it if it is not
+    if message:
+
+        message = message.encode('utf-8')
+        message_header = f"{len(message):<{HEADER_SIZE}}".encode('utf-8')
+        client.send(message_header + message)
+
+    try:
+        # loop over the new messages and print them
+        while True:
+
+            # receive the sender's username
+            sender_uname_header = client.recv(HEADER_SIZE)
+
+            # no data
+            if not len(username_header):
+                print('Connection closed by the server')
+                sys.exit()
+
+            username_length = int(username_header.decode('utf-8').strip())
+
+            username = client.recv(username_length).decode('utf-8')
+
+            # parse the received message
+            message_header = client.recv(HEADER_SIZE)
+            message_length = int(message_header.decode('utf-8').strip())
+            message = client.recv(message_length).decode('utf-8')
+
+            # print message
+            print(f'{username} > {message}')
+
+
+    # handle exceptions
+    except IOError as e:
+        # ignore the EAGAIN and EWOULDBLOCK because they are expected behaviours, catch the other exceptions
+        if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
+            print('Read error: {}'.format(str(e)))
+            sys.exit()
+
+        # We just did not receive anything
+        continue
+
+    except Exception as e:
+        print('Exception: '.format(str(e)))
+        sys.exit()
+
+
+'''
 s = socket.socket()
 host = socket.gethostname() # get the server host name
 port = 12345 # the port of the server
@@ -60,3 +133,4 @@ while not stop:
 
 
     # s.close() # close the connection
+'''

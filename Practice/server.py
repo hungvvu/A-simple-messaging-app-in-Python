@@ -1,6 +1,7 @@
 #!/usr/bin/python# This is server.py file
 import socket
 import time
+import select
 
 HEADER_SIZE = 10 # the length of the message header
 BUFFER_SIZE = 10
@@ -25,12 +26,85 @@ def send_file(s: socket, c: socket, filedir: str):
     # # print out confirmation
     # print("Text from client: " + conf)
 
-s = socket.socket()
-host = socket.gethostname() # get local machine name
-port = 12345 # reserve a port for this server
-s.bind((host, port)) # bind the port
+def receive_txt(client_socket):
+    try:
+        header = client_socket.recv(HEADER_SIZE)
 
-s.listen(5) #  wait for client connection.
+        if not len(header):
+            return False
+        
+        message_length = int(header.decode().strip())
+
+        return {"header": header, "data": client_socket.recv(message_length)}
+    except:
+        return False
+
+
+IP = "127.0.0.1"
+PORT = 12345
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((IP, PORT)) # bind the port
+
+sockets_list = [server]
+
+client_info = {}
+
+server.listen(5) #  wait for client connection.
+
+
+while True:
+    read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
+
+    # iterate over the sockets that have something for us to read
+    for s in read_sockets:
+
+        # if we see the server socket, it means there is no new message to read and we should wait and accept incoming connections
+        if s == server:
+            client, client_addr = server.accept()
+
+            user = receive_txt(client)
+            if user is False:
+                # do something
+                continue
+
+        
+            sockets_list.append(client)
+
+            client_info[client] = user
+
+            print("New connection from {}:{}, username: {}".format(*client_addr, user['data'].decode('utf-8')))
+
+        # if s is a socket other than the server, we have gotten a new message to read
+        else:
+            message = receive_txt(s)
+
+            # if there is no message, close the connection
+            if message is False:
+                print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
+                sockets_list.remove(s)
+                del client_info[s]
+
+
+            user = client_info[s]
+
+            # send the message to the target client(s)
+            # target.send(user['header'] + user['data'] + message['header'] + message['data'])
+
+            print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
+
+            # handle exception sockets
+            for es in exception_sockets:
+                
+                # Remove from list for socket.socket()
+                sockets_list.remove(es)
+
+                # Remove from our list of users
+                del client_info[es]
+            
+
+
+'''
 new_msg = False # the server right now temporarily not able to receive message
 
 ###################################################
@@ -69,3 +143,4 @@ while True:
     
     # time.sleep(3*len(msg)) # to avoid closing the connection immediately and allow the transmitting to finish
     # c.close() # close the connection
+'''
