@@ -36,9 +36,16 @@ while True:
 
         # if (len(full_msg)-HEADER_SIZE == mLen): # if we got the full message already
         # print("Text from client: " + full_msg[HEADER_SIZE:])
-    msg = "Yes, I'm here!"
-    msg = f'{len(msg):<{HEADER_SIZE}}' + msg # append the header to the message (currently contain only msg length)
-    c.send(msg.encode())
+    # read a photo from a file as binary
+    with open('resources/potato.jpg', 'rb') as f:
+        data = f.read()
+        c.sendfile(f)
+        f.close
+
+    # # send the photo to the client
+    # msg = str(data.decode('utf-8'))
+    # msg = f'{len(msg):<{HEADER_SIZE}}' + msg # append the header to the message (currently contain only msg length)
+    # c.send(bytes(msg, 'utf-8'))
         
     
     # time.sleep(3*len(msg)) # to avoid closing the connection immediately and allow the transmitting to finish

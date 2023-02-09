@@ -23,18 +23,24 @@ full_msg = ''
 new_msg = True
 
 while True:
-    msg = s.recv(BUFFER_SIZE).decode()
+    msg = s.recv(20500)
 
-    # get the message length from the header
-    if new_msg:
-        mLen = int(msg[:HEADER_SIZE])
-        new_msg = False
+    # reminder 
+    with open('received.jpeg', 'wb') as f:
+        f.write(msg)
 
-    full_msg += msg # append the buffered part to the full msg
-    if (len(full_msg)-HEADER_SIZE == mLen): # if we got the full message already
-        print('Message from server: ' + full_msg[HEADER_SIZE:])
-        new_msg = True # set the new msg flag to prepare for the next message
-        full_msg = '' # empty the full message temporary string
+    # # get the message length from the header
+    # if new_msg:
+    #     mLen = int(msg[:HEADER_SIZE])
+    #     new_msg = False
+
+    # full_msg += msg # append the buffered part to the full msg
+    # if (len(full_msg)-HEADER_SIZE == mLen): # if we got the full message already
+    #     # print('Message from server: ' + full_msg[HEADER_SIZE:])
+    #     with open('received.jpeg', 'wb') as f:
+    #         f.write(bytes(full_msg,'utf-8'))
+    #     new_msg = True # set the new msg flag to prepare for the next message
+    #     full_msg = '' # empty the full message temporary string
 
 
     # s.close() # close the connection
