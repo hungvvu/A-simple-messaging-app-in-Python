@@ -6,8 +6,14 @@ import errno
 
 BUFFER_SIZE = 10
 HEADER_SIZE = 10
+IP = "127.0.0.1"
+PORT = 12345
+my_username = input("Username: ")
+
 
 # Functions
+
+# receive a file from another socket and save it to filedire
 def recv_file(s: socket, filedir: str):
     f = open(filedir,'wb') #open in binary
     l = s.recv(1024)
@@ -20,10 +26,18 @@ def recv_file(s: socket, filedir: str):
     s.send('Nice potato.'.encode())
 
 
+# send a text message to another user through the server socket
+def send_txt_to(target_username, txt):
+    # first, send the username to the server
+    username = target_username.encode()
+    username_header = f"{len(username):<{HEADER_SIZE}}".encode()
+    client.send(username_header + username)
 
-IP = "127.0.0.1"
-PORT = 12345
-my_username = input("Username: ")
+    # next, send the content of the message
+    message = txt.encode('utf-8')
+    message_header = f"{len(message):<{HEADER_SIZE}}".encode('utf-8')
+    client.send(message_header + message)
+
 
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,12 +58,13 @@ while True:
     # message input from the user
     message = input(f'{my_username} > ')
 
+    # allow the user to enter the target username to send the message to
+    target = input(f'send to: ')
+
     # check if the message is empty, send it if it is not
     if message:
 
-        message = message.encode('utf-8')
-        message_header = f"{len(message):<{HEADER_SIZE}}".encode('utf-8')
-        client.send(message_header + message)
+        send_txt_to(target, message)
 
     try:
         # loop over the new messages and print them
