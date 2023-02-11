@@ -11,6 +11,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
+    
+
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -39,6 +41,7 @@ class Ui_Dialog(object):
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(820, 580, 61, 51))
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(self.clickedSend)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -51,6 +54,9 @@ class Ui_Dialog(object):
         
         self.pushButton_2.setText(_translate("Dialog", "User 1"))
         self.pushButton.setText(_translate("Dialog", ">>"))
+
+    def clickedSend(self):
+        self.textBrowser.append("Send button pressed")
 
 
 if __name__ == "__main__":
