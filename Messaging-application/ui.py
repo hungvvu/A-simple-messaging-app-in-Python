@@ -76,7 +76,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", f"{self.client.my_username} - Gnirob messaging"))
         self.textBrowser.setFontPointSize(15)
         
-        self.pushButton_2.setText(_translate("Dialog", "--Add Conversation--"))
+        self.pushButton_2.setText(_translate("Dialog", "--New Conversation--"))
         self.pushButton.setText(_translate("Dialog", ">>"))
 
 
@@ -108,17 +108,27 @@ class Ui_Dialog(object):
             self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
             newConvo.setText(target_username)
 
-            newConvo.clicked.connect(lambda: self.chosen_conversation(target_username)) # connect the button with the signal for choosing conversations and pass in the target username
+            newConvo.clicked.connect(lambda: self.chosen_conversation(target_username, newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
 
 
-    def chosen_conversation(self, target_username):
+    def chosen_conversation(self, target_username, button):
+        self.clear_layout_color()
+        button.setStyleSheet("background-color: DarkOliveGreen")
         self.active_convo = target_username
+    
+    # for clearing all color of the widgets in the layout
+    def clear_layout_color(self):
+        for i in range(self.verticalLayout.count()):
+            currWid = self.verticalLayout.itemAt(i).widget()
+            if currWid:
+                currWid.setStyleSheet("")
 
 
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle('Fusion')
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
