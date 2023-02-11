@@ -49,15 +49,21 @@ class Ui_Dialog(object):
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
+
+        # create button for adding new conversation
         self.pushButton_2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.setObjectName("--Add Conversation--")
+
         self.verticalLayout.addWidget(self.pushButton_2)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(820, 580, 61, 51))
         self.pushButton.setObjectName("pushButton")
+
+        # connect signals to slots
         self.pushButton.clicked.connect(self.clicked_send)
+        self.pushButton_2.clicked.connect(self.add_new_convo)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -67,8 +73,12 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", f"Gnirob messaging - {self.client.my_username}"))
         self.textBrowser.setFontPointSize(15)
         
-        self.pushButton_2.setText(_translate("Dialog", "User 1"))
+        self.pushButton_2.setText(_translate("Dialog", "--Add Conversation--"))
         self.pushButton.setText(_translate("Dialog", ">>"))
+
+
+
+    ## slots ##
 
     def clicked_send(self):
         message = self.plainTextEdit.toPlainText() # saved the inputed message
@@ -84,6 +94,15 @@ class Ui_Dialog(object):
 
     def update_chatbox(self, message):
         self.textBrowser.append(message)
+
+    def add_new_convo(self):
+        newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        target_username, ok = QInputDialog.getText(None, "Add new conversation", "Target's username: ")
+
+        if ok:
+            self.pushButton_2.setObjectName(target_username)
+            self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
+            newConvo.setText(target_username)
 
 
 if __name__ == "__main__":
