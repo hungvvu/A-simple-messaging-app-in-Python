@@ -28,6 +28,9 @@ class Ui_Dialog(object):
             self.client.moveToThread(self.client_thread)
             self.client_thread.start()
             QMetaObject.invokeMethod(self.client, 'run', Qt.QueuedConnection)
+
+        # create class member variables
+        self.active_convo = '' # the currently active conversation
         
 
     def setupUi(self, Dialog):
@@ -70,7 +73,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", f"Gnirob messaging - {self.client.my_username}"))
+        Dialog.setWindowTitle(_translate("Dialog", f"{self.client.my_username} - Gnirob messaging"))
         self.textBrowser.setFontPointSize(15)
         
         self.pushButton_2.setText(_translate("Dialog", "--Add Conversation--"))
@@ -83,13 +86,13 @@ class Ui_Dialog(object):
     def clicked_send(self):
         message = self.plainTextEdit.toPlainText() # saved the inputed message
         # if the message box is not empty
-        if message:
+        if message and self.active_convo:
             self.plainTextEdit.setPlainText("") # clear the text box
 
             self.textBrowser.append(f"You > {message}")
-            target_username, ok = QInputDialog.getText(None, "Send message to", "Target's username: ")
-            if ok:
-                self.client.send_txt_to(target_username, message)
+            # target_username, ok = QInputDialog.getText(None, "Send message to", "Target's username: ")
+            # if ok:
+            self.client.send_txt_to(self.active_convo, message)
 
 
     def update_chatbox(self, message):
@@ -100,9 +103,17 @@ class Ui_Dialog(object):
         target_username, ok = QInputDialog.getText(None, "Add new conversation", "Target's username: ")
 
         if ok:
+            # create new button for the added conversation
             self.pushButton_2.setObjectName(target_username)
             self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
             newConvo.setText(target_username)
+
+            newConvo.clicked.connect(lambda: self.chosen_conversation(target_username)) # connect the button with the signal for choosing conversations and pass in the target username
+
+
+    def chosen_conversation(self, target_username):
+        self.active_convo = target_username
+
 
 
 if __name__ == "__main__":
