@@ -9,11 +9,27 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import QThread, QMetaObject, Qt
+from PyQt5.QtWidgets import QInputDialog
+from client import *
 
     
 
 class Ui_Dialog(object):
+    def __init__(self):
+        # initialize the client
+        my_username, ok = QInputDialog.getText(None, "Enter your username", "Username: ")
+        if ok:
+            self.client = Client(IP, PORT, my_username)
+            self.client.message_received.connect(self.update_chatbox) # connect the message_received signal to the handling function
+
+            # Start client in a separate thread
+            self.client_thread = QThread()
+            self.client.moveToThread(self.client_thread)
+            self.client_thread.start()
+            QMetaObject.invokeMethod(self.client, 'run', Qt.QueuedConnection)
+        
+
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(874, 628)
@@ -41,22 +57,33 @@ class Ui_Dialog(object):
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(820, 580, 61, 51))
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(self.clickedSend)
+        self.pushButton.clicked.connect(self.clicked_send)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Deez message"))
+        Dialog.setWindowTitle(_translate("Dialog", f"Gnirob messaging - {self.client.my_username}"))
         self.textBrowser.setFontPointSize(15)
-        self.textBrowser.setPlainText("Hi, this is the chat window with some test text. This text doesn't \n really mean anything, it is just to show that this text UI is working. \n These are \n some \n new lines.")
         
         self.pushButton_2.setText(_translate("Dialog", "User 1"))
         self.pushButton.setText(_translate("Dialog", ">>"))
 
-    def clickedSend(self):
-        self.textBrowser.append("Send button pressed")
+    def clicked_send(self):
+        message = self.plainTextEdit.toPlainText() # saved the inputed message
+        # if the message box is not empty
+        if message:
+            self.plainTextEdit.setPlainText("") # clear the text box
+
+            self.textBrowser.append(f"You > {message}")
+            target_username, ok = QInputDialog.getText(None, "Send message to", "Target's username: ")
+            if ok:
+                self.client.send_txt_to(target_username, message)
+
+
+    def update_chatbox(self, message):
+        self.textBrowser.append(message)
 
 
 if __name__ == "__main__":

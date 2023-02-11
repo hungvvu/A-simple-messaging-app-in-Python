@@ -87,38 +87,40 @@ while True:
             # next, parse out the message
             message = receive_txt(s)
 
-            # if the username does not exist, send back an error message to the client
-            if target_info not in client_info.values():
-                error_msg = "error: username not found".encode()
-                error_header = f"{len(error_msg):<{HEADER_SIZE}}".encode()
-                s.send(user['header'] + user['data'] + error_header + error_msg)
-                
-                # discard the message since it has no receiver
-                message = ''
             
-            
+
+
+            # if there is no message, close the connection
+            if message is False:
+                print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
+                sockets_list.remove(s)
+                del client_info[s]
+
+
             else:
-                # extract the socket from the username
-                key_list = list(client_info.keys())
-                val_list = list(client_info.values())
+                # if the username does not exist, send back an error message to the client
+                if target_info not in client_info.values():
+                    error_msg = "error: username not found".encode()
+                    error_header = f"{len(error_msg):<{HEADER_SIZE}}".encode()
+                    s.send(user['header'] + user['data'] + error_header + error_msg)
+                    
+                    # discard the message since it has no receiver
+                    message = ''
                 
-                pos = val_list.index(target_info)
-
-                target_socket = key_list[pos]
-
-
-                # if there is no message, close the connection
-                if message is False:
-                    print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
-                    sockets_list.remove(s)
-                    del client_info[s]
-
-
+                
                 else:
-                    # send the message to the target client(s)
-                    target_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
+                    # extract the socket from the username
+                    key_list = list(client_info.keys())
+                    val_list = list(client_info.values())
+                    
+                    pos = val_list.index(target_info)
 
-                    print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
+                    target_socket = key_list[pos]
+                    
+                # send the message to the target client(s)
+                target_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
+
+                print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
             # handle exception sockets
             for es in exception_sockets:
