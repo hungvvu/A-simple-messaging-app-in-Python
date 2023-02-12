@@ -77,7 +77,10 @@ while True:
         else:
             user = client_info[s]
 
-            # first, get the user info
+            # first, get the message type
+            msg_type = s.recv(1).decode('utf-8')
+
+            # second, get the user info
             target_info = receive_txt(s)
 
             # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
@@ -87,36 +90,36 @@ while True:
             message = receive_txt(s)
 
             
+            # handle the given message type accordingly
+            if str(msg_type) == str(constants.MsgType.TEXT.value): 
+                # if there is no message, close the connection
+                if message is False:
+                    print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
+                    sockets_list.remove(s)
+                    del client_info[s]
 
 
-            # if there is no message, close the connection
-            if message is False:
-                print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
-                sockets_list.remove(s)
-                del client_info[s]
-
-
-            else:
-                # if the username does not exist, send back an error message to the client
-                if target_info not in client_info.values():
-                    error_msg = "error: username not found".encode()
-                    error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
-                    s.send(user['header'] + user['data'] + timestamp + error_header + error_msg)
-                
-                
                 else:
-                    # extract the socket from the username
-                    key_list = list(client_info.keys())
-                    val_list = list(client_info.values())
+                    # if the username does not exist, send back an error message to the client
+                    if target_info not in client_info.values():
+                        error_msg = "Error: username not found".encode()
+                        error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
+                        s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user['header'] + user['data'] + timestamp + error_header + error_msg)
                     
-                    pos = val_list.index(target_info)
+                    
+                    else:
+                        # extract the socket from the username
+                        key_list = list(client_info.keys())
+                        val_list = list(client_info.values())
+                        
+                        pos = val_list.index(target_info)
 
-                    target_socket = key_list[pos]
+                        target_socket = key_list[pos]
 
-                    # send the message to the target client(s)
-                    target_socket.send(user['header'] + user['data'] + timestamp + message['header'] + message['data'])
+                        # send the message to the target client(s)
+                        target_socket.send(str(msg_type).encode('utf-8') + user['header'] + user['data'] + timestamp + message['header'] + message['data'])
 
-                    print(f'{timestamp.decode("utf-8")}, received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
+                        print(f'{timestamp.decode("utf-8")}, received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
             # handle exception sockets
             for es in exception_sockets:

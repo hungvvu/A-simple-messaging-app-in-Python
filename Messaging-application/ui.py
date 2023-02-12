@@ -35,7 +35,7 @@ class Ui_Dialog(object):
         my_username, ok = QInputDialog.getText(None, "Enter your username", "Username: ")
         if ok:
             self.client = Client(constants.IP, constants.PORT, my_username)
-            self.client.message_received.connect(self.update_chatbox) # connect the message_received signal to the handling function
+            self.client.text_message_received.connect(self.update_chatbox) # connect the text_ceived signal to the handling function
 
             # Start client in a separate thread
             self.client_thread = QThread()

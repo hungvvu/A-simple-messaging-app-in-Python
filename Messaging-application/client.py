@@ -6,10 +6,7 @@ import sys
 import errno
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
-BUFFER_SIZE = 10
-HEADER_SIZE = 10
-IP = "127.0.0.1"
-PORT = 12345
+import constants
 
 MESSAGE_SCAN_DELAY = 0.3 # delay between each scan for new messages, in seconds
 
@@ -28,11 +25,11 @@ class Client(QObject):
 
         # create the username for this client and send it to the server
         username = self.my_username.encode()
-        username_header = f"{len(username):<{HEADER_SIZE}}".encode()
+        username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
         self.client.send(username_header + username)
 
-    # signal for handling message receiving
-    message_received = pyqtSignal(str)
+    # signals for handling message receiving
+    text_message_received = pyqtSignal(str)
 
     def recv_file(self, filedir: str):
         f = open(filedir,'wb') #open in binary
@@ -47,9 +44,13 @@ class Client(QObject):
 
 
     def send_txt_to(self, target_username, txt):
-        # first, send the username to the server
+        # first, send the message type
+        a = str(constants.MsgType.TEXT)
+        self.client.send(str(constants.MsgType.TEXT.value).encode('utf-8'))
+
+        # second, send the username to the server
         username = target_username.encode()
-        username_header = f"{len(username):<{HEADER_SIZE}}".encode()
+        username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
         self.client.send(username_header + username)
 
         # next, send the timestamp of the message
@@ -59,7 +60,7 @@ class Client(QObject):
 
         # finally, send the message to the server
         message = txt.encode('utf-8')
-        message_header = f"{len(message):<{HEADER_SIZE}}".encode('utf-8')
+        message_header = f"{len(message):<{constants.HEADER_SIZE}}".encode('utf-8')
         self.client.send(message_header + message)
 
     @pyqtSlot()
@@ -68,28 +69,53 @@ class Client(QObject):
             try:
                 # loop over the new messages and print them
                 while True:
+                    # get the message type
+                    msg_type = self.client.recv(1).decode('utf-8')
+
                     # receive the sender's username
-                    sender_uname_header = self.client.recv(HEADER_SIZE)
+                    sender_uname_header = self.client.recv(constants.HEADER_SIZE)
 
                     # no data
                     if not len(sender_uname_header):
                         print('Connection closed by the server')
                         sys.exit()
 
-                    username_length = int(sender_uname_header.decode('utf-8').strip())
 
-                    username = self.client.recv(username_length).decode('utf-8')
+                    # handle the message type accordingly
+                    if msg_type == str(constants.MsgType.TEXT.value):
+                        # get the sender's username
+                        username_length = int(sender_uname_header.decode('utf-8').strip())
 
-                    # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
-                    timestamp = self.client.recv(5).decode('utf-8')
+                        username = self.client.recv(username_length).decode('utf-8')
 
-                    # parse the received message
-                    message_header = self.client.recv(HEADER_SIZE)
-                    message_length = int(message_header.decode('utf-8').strip())
-                    message = self.client.recv(message_length).decode('utf-8')
+                        # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+                        timestamp = self.client.recv(5).decode('utf-8')
 
-                    # emit a message receive signal
-                    self.message_received.emit(f"[{timestamp}, {username}] > {message}")
+                        # parse the received message
+                        message_header = self.client.recv(constants.HEADER_SIZE)
+                        message_length = int(message_header.decode('utf-8').strip())
+                        message = self.client.recv(message_length).decode('utf-8')
+
+                        # emit a message receive signal
+                        self.text_message_received.emit(f"[{timestamp}, {username}] > {message}")
+
+                    elif msg_type == str(constants.MsgType.ERROR.value):
+                        # get the sender's username
+                        username_length = int(sender_uname_header.decode('utf-8').strip())
+
+                        username = self.client.recv(username_length).decode('utf-8')
+
+                        # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+                        timestamp = self.client.recv(5).decode('utf-8')
+
+                        # parse the received message
+                        message_header = self.client.recv(constants.HEADER_SIZE)
+                        message_length = int(message_header.decode('utf-8').strip())
+                        message = self.client.recv(message_length).decode('utf-8')
+
+                        # emit a message receive signal that contain the error message
+                        self.text_message_received.emit(f"{message}")
+
 
 
                     
