@@ -13,6 +13,7 @@ from PyQt5.QtCore import QThread, QMetaObject, Qt
 from PyQt5.QtWidgets import QInputDialog
 from client import *
 
+import constants
     
 # a class for the chat text box where user enter their message in
 class TextBox(QtWidgets.QPlainTextEdit):
@@ -33,7 +34,7 @@ class Ui_Dialog(object):
         # initialize the client
         my_username, ok = QInputDialog.getText(None, "Enter your username", "Username: ")
         if ok:
-            self.client = Client(IP, PORT, my_username)
+            self.client = Client(constants.IP, constants.PORT, my_username)
             self.client.message_received.connect(self.update_chatbox) # connect the message_received signal to the handling function
 
             # Start client in a separate thread

@@ -3,8 +3,7 @@ import socket
 import time
 import select
 
-HEADER_SIZE = 10 # the length of the message header
-BUFFER_SIZE = 10
+import constants
 
 # Functions
 def send_file(s: socket, c: socket, filedir: str):
@@ -28,7 +27,7 @@ def send_file(s: socket, c: socket, filedir: str):
 
 def receive_txt(client_socket):
     try:
-        header = client_socket.recv(HEADER_SIZE)
+        header = client_socket.recv(constants.HEADER_SIZE)
 
         if not len(header):
             return False
@@ -40,11 +39,9 @@ def receive_txt(client_socket):
         return False
 
 
-IP = "127.0.0.1"
-PORT = 12345
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((IP, PORT)) # bind the port
+server.bind((constants.IP, constants.PORT)) # bind the port
 
 sockets_list = [server]
 
@@ -103,7 +100,7 @@ while True:
                 # if the username does not exist, send back an error message to the client
                 if target_info not in client_info.values():
                     error_msg = "error: username not found".encode()
-                    error_header = f"{len(error_msg):<{HEADER_SIZE}}".encode()
+                    error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
                     s.send(user['header'] + user['data'] + timestamp + error_header + error_msg)
                 
                 
