@@ -29,6 +29,36 @@ class TextBox(QtWidgets.QPlainTextEdit):
             super().keyPressEvent(event)
 
 
+# a class for the input diaglog for creating group chat
+class CreateGroupChatDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self.setWindowTitle("Adding new groupchat")
+        
+        # Create the input fields
+        self.name_label = QtWidgets.QLabel("Group name: ")
+        self.name_input = QtWidgets.QLineEdit()
+        self.list_label = QtWidgets.QLabel("Member list (use ';' to separate usernames): ")
+        self.list_input = QtWidgets.QLineEdit()
+        
+        # Create the layout
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.name_label)
+        layout.addWidget(self.name_input)
+        layout.addWidget(self.list_label)
+        layout.addWidget(self.list_input)
+        self.setLayout(layout)
+        
+        # Add buttons
+        self.buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
+            QtCore.Qt.Horizontal, self)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+
 class Ui_Dialog(object):
     def __init__(self):
         # initialize the client
@@ -69,7 +99,7 @@ class Ui_Dialog(object):
 
         # create button for adding new conversation
         self.pushButton_2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_2.setObjectName("--Add Conversation--")
+        self.pushButton_2.setObjectName("--New Conversation--")
 
         self.verticalLayout.addWidget(self.pushButton_2)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -80,7 +110,7 @@ class Ui_Dialog(object):
 
         # connect signals to slots
         self.pushButton.clicked.connect(self.clicked_send)
-        self.pushButton_2.clicked.connect(self.add_new_convo)
+        self.pushButton_2.clicked.connect(self.show_new_convo_menu)
         self.TextBox.enter_pressed.connect(self.clicked_send)
 
         self.retranslateUi(Dialog)
@@ -116,18 +146,60 @@ class Ui_Dialog(object):
     def update_chatbox(self, message):
         self.textBrowser.append(message)
 
+
+    def show_new_convo_menu(self):
+        menu = QtWidgets.QMenu(self.pushButton_2)
+        
+        action1 = menu.addAction("Direct message")
+        action2 = menu.addAction("Group message")
+        
+        action1.triggered.connect(self.add_new_convo)
+        action2.triggered.connect(self.add_new_group_convo)
+        
+        menu.exec_(QtGui.QCursor.pos())
+
+    # for adding new direct messages conversations
     def add_new_convo(self):
         newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        target_username, ok = QInputDialog.getText(None, "Add new conversation", "Target's username: ")
+        target_username, ok = QInputDialog.getText(None, "Adding new conversation", "Target's username: ")
 
         if ok:
             # create new button for the added conversation
-            self.pushButton_2.setObjectName(target_username)
+            # self.pushButton_2.setObjectName(target_username)
             self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
             newConvo.setText(target_username)
 
             newConvo.clicked.connect(lambda: self.chosen_conversation(target_username, newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
 
+            # save the new conversation on the client side
+            self.client.add_convo(target_username, {target_username})
+    
+    def add_new_group_convo(self):
+        createGroupDialog = CreateGroupChatDialog()
+        result = createGroupDialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            group_name = createGroupDialog.name_input.text()
+            member_list_raw = createGroupDialog.list_input.text()
+
+            try:
+                member_set = set(member_list_raw.split(';')) # parse the usernames
+
+                if group_name and member_set:
+                    newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
+
+                    # create new button for the added conversation
+                    # self.pushButton_2.setObjectName(target_username)
+                    self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
+                    newConvo.setText(group_name)
+
+                    newConvo.clicked.connect(lambda: self.chosen_conversation(group_name, newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
+
+                    # save the new conversation on the client side
+                    self.client.add_convo(group_name, member_set)
+            
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(None, 'Error', str(e))
 
     def chosen_conversation(self, target_username, button):
         self.clear_layout_color()

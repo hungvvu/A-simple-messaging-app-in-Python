@@ -5,6 +5,8 @@ import select
 
 import constants
 
+MESSAGE_SCAN_DELAY = 0.1
+
 # Functions
 def send_file(s: socket, c: socket, filedir: str):
   # read a photo from a file as binary
@@ -129,3 +131,5 @@ while True:
 
                 # Remove from our list of users
                 del client_info[es]
+    
+    time.sleep(MESSAGE_SCAN_DELAY)

@@ -28,8 +28,14 @@ class Client(QObject):
         username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
         self.client.send(username_header + username)
 
+        # dictionary of added conversations, with the conversation name as keys and lists of coresponding username as values
+        self.conversations = {}
+
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
+
+    def add_convo(self, convo_name, username_set):
+        self.conversations[convo_name] = username_set
 
     def recv_file(self, filedir: str):
         f = open(filedir,'wb') #open in binary
