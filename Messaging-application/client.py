@@ -1,6 +1,7 @@
 #!/usr/bin/python# This is client.py file
 import socket
 import time
+import datetime
 import sys
 import errno
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
@@ -51,7 +52,12 @@ class Client(QObject):
         username_header = f"{len(username):<{HEADER_SIZE}}".encode()
         self.client.send(username_header + username)
 
-        # next, send the content of the message
+        # next, send the timestamp of the message
+        # make a timestamp from the current time
+        timestamp = datetime.datetime.now().strftime("%H:%M")
+        self.client.send(timestamp.encode('utf-8')) # send the timestamp to the server, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+
+        # finally, send the message to the server
         message = txt.encode('utf-8')
         message_header = f"{len(message):<{HEADER_SIZE}}".encode('utf-8')
         self.client.send(message_header + message)
@@ -74,13 +80,16 @@ class Client(QObject):
 
                     username = self.client.recv(username_length).decode('utf-8')
 
+                    # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+                    timestamp = self.client.recv(5).decode('utf-8')
+
                     # parse the received message
                     message_header = self.client.recv(HEADER_SIZE)
                     message_length = int(message_header.decode('utf-8').strip())
                     message = self.client.recv(message_length).decode('utf-8')
 
                     # emit a message receive signal
-                    self.message_received.emit(f"{username} > {message}")
+                    self.message_received.emit(f"[{timestamp}, {username}] > {message}")
 
 
                     

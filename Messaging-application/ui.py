@@ -14,6 +14,19 @@ from PyQt5.QtWidgets import QInputDialog
 from client import *
 
     
+# a class for the chat text box where user enter their message in
+class TextBox(QtWidgets.QPlainTextEdit):
+    # signal for dectecting when the enter key is pressed
+    enter_pressed = pyqtSignal()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.enter_pressed.emit()
+        elif event.key() == QtCore.Qt.Key_Enter:
+            self.enter_pressed.emit()
+        else:
+            super().keyPressEvent(event)
+
 
 class Ui_Dialog(object):
     def __init__(self):
@@ -38,9 +51,9 @@ class Ui_Dialog(object):
         Dialog.resize(874, 628)
         Dialog.setMinimumSize(QtCore.QSize(874, 628))
         Dialog.setMaximumSize(QtCore.QSize(874, 628))
-        self.plainTextEdit = QtWidgets.QPlainTextEdit(Dialog)
-        self.plainTextEdit.setGeometry(QtCore.QRect(220, 580, 601, 51))
-        self.plainTextEdit.setObjectName("plainTextEdit")
+        self.TextBox = TextBox(Dialog)
+        self.TextBox.setGeometry(QtCore.QRect(220, 580, 601, 51))
+        self.TextBox.setObjectName("TextBox")
         self.textBrowser = QtWidgets.QTextBrowser(Dialog)
         self.textBrowser.setGeometry(QtCore.QRect(220, 0, 661, 581))
         self.textBrowser.setObjectName("textBrowser")
@@ -67,6 +80,7 @@ class Ui_Dialog(object):
         # connect signals to slots
         self.pushButton.clicked.connect(self.clicked_send)
         self.pushButton_2.clicked.connect(self.add_new_convo)
+        self.TextBox.enter_pressed.connect(self.clicked_send)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -84,12 +98,15 @@ class Ui_Dialog(object):
     ## slots ##
 
     def clicked_send(self):
-        message = self.plainTextEdit.toPlainText() # saved the inputed message
+        message = self.TextBox.toPlainText() # saved the inputed message
         # if the message box is not empty
         if message and self.active_convo:
-            self.plainTextEdit.setPlainText("") # clear the text box
+            self.TextBox.setPlainText("") # clear the text box
 
-            self.textBrowser.append(f"You > {message}")
+            # make a timestamp from the current time
+            timestamp = datetime.datetime.now().strftime("%H:%M")
+
+            self.textBrowser.append(f"[{timestamp}, You] > {message}")
             # target_username, ok = QInputDialog.getText(None, "Send message to", "Target's username: ")
             # if ok:
             self.client.send_txt_to(self.active_convo, message)

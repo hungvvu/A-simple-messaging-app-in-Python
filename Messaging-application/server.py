@@ -82,7 +82,9 @@ while True:
 
             # first, get the user info
             target_info = receive_txt(s)
-            # target = target_info['data'].decode()
+
+            # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+            timestamp = s.recv(5)
 
             # next, parse out the message
             message = receive_txt(s)
@@ -102,10 +104,7 @@ while True:
                 if target_info not in client_info.values():
                     error_msg = "error: username not found".encode()
                     error_header = f"{len(error_msg):<{HEADER_SIZE}}".encode()
-                    s.send(user['header'] + user['data'] + error_header + error_msg)
-                    
-                    # discard the message since it has no receiver
-                    message = ''
+                    s.send(user['header'] + user['data'] + timestamp + error_header + error_msg)
                 
                 
                 else:
@@ -116,11 +115,11 @@ while True:
                     pos = val_list.index(target_info)
 
                     target_socket = key_list[pos]
-                    
-                # send the message to the target client(s)
-                target_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
 
-                print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
+                    # send the message to the target client(s)
+                    target_socket.send(user['header'] + user['data'] + timestamp + message['header'] + message['data'])
+
+                    print(f'{timestamp.decode("utf-8")}, received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
             # handle exception sockets
             for es in exception_sockets:
@@ -130,46 +129,3 @@ while True:
 
                 # Remove from our list of users
                 del client_info[es]
-            
-
-
-'''
-new_msg = False # the server right now temporarily not able to receive message
-
-###################################################
-# REMINDER: FIND A WAY TO FIX THIS PROBLEM 
-################################################### 
-
-full_msg = ''
-while True:
-    c, addr = s.accept() # establish connection with client.
-    print('Got connection from', addr)
-
-    message_completed = True # the server right now temporarily not able to receive message
-    # while not message_completed:
-        # msg = c.recv(BUFFER_SIZE).decode()
-        
-        # # get the message length from the header
-        # if new_msg:
-        #     mLen = int(msg[:HEADER_SIZE])
-        #     new_msg = False
-
-        # full_msg += msg # append the buffered part to the full msg
-
-        # if (len(full_msg)-HEADER_SIZE == mLen): # if we got the full message already
-        # print("Text from client: " + full_msg[HEADER_SIZE:])
-    
-    send_file(s, c, 'resources/potato.jpg')
-    c.close()
-    
-        
-
-    # # send the photo to the client
-    # msg = str(data.decode('utf-8'))
-    # msg = f'{len(msg):<{HEADER_SIZE}}' + msg # append the header to the message (currently contain only msg length)
-    # c.send(bytes(msg, 'utf-8'))
-        
-    
-    # time.sleep(3*len(msg)) # to avoid closing the connection immediately and allow the transmitting to finish
-    # c.close() # close the connection
-'''
