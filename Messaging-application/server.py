@@ -39,6 +39,7 @@ class Server():
 
         self.client_info = {}
         self.conversations = {}
+        self.group_owners = {}
 
     def send_file(s: socket, c: socket, filedir: str):
     # read a photo from a file as binary
@@ -236,7 +237,12 @@ class Server():
 
                             # add the sender into the conversation
                             # conversation_info.add(UserInfo(user.header, user.data))
+
+                            # save the conversation to the database
                             self.conversations[convo_name['data']] = conversation_info
+
+                            if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
+                                self.group_owners[convo_name['data']] = user
 
 
 
