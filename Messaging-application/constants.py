@@ -10,3 +10,7 @@ PORT = 12345
 class MsgType(Enum):
     ERROR = 0
     TEXT = 1
+    TASK = 2
+
+class TaskType(Enum):
+    ADD_CONVO = 1

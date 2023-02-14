@@ -2,6 +2,7 @@
 import socket
 import time
 import select
+import pickle
 
 import constants
 
@@ -48,6 +49,7 @@ server.bind((constants.IP, constants.PORT)) # bind the port
 sockets_list = [server]
 
 client_info = {}
+conversations = {}
 
 server.listen(5) #  wait for client connection.
 
@@ -82,18 +84,18 @@ while True:
             # first, get the message type
             msg_type = s.recv(1).decode('utf-8')
 
-            # second, get the user info
-            target_info = receive_txt(s)
-
-            # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
-            timestamp = s.recv(5)
-
-            # next, parse out the message
-            message = receive_txt(s)
-
             
             # handle the given message type accordingly
-            if str(msg_type) == str(constants.MsgType.TEXT.value): 
+            if msg_type == str(constants.MsgType.TEXT.value): # a normal text message
+                # second, get the user info
+                target_info = receive_txt(s)
+
+                # get the timestamp of the message, since the format is always HH:MM, we can safely assume that it is always 5 bytes
+                timestamp = s.recv(5)
+
+                # next, parse out the message
+                message = receive_txt(s)
+
                 # if there is no message, close the connection
                 if message is False:
                     print('Closed connection from: {}'.format(client_info[s]['data'].decode('utf-8')))
@@ -122,6 +124,36 @@ while True:
                         target_socket.send(str(msg_type).encode('utf-8') + user['header'] + user['data'] + timestamp + message['header'] + message['data'])
 
                         print(f'{timestamp.decode("utf-8")}, received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
+
+
+            elif msg_type == str(constants.MsgType.TASK.value): # a task to be executed
+                # get the task type
+                task_type = s.recv(1).decode()
+
+                if task_type == str(constants.TaskType.ADD_CONVO.value): # add a new conversation to the database
+                    # get the conversation name
+                    convo_name = receive_txt(s)
+
+                    # receive the header to get the length of the data
+                    set_header = s.recv(constants.HEADER_SIZE)
+                    username_set_len = int.from_bytes(set_header, byteorder='big')
+
+                    # receive the data
+                    username_set = b''
+                    while len(username_set) < username_set_len:
+                        chunk = s.recv(constants.BUFFER_SIZE)
+                        if chunk == b'':
+                            raise RuntimeError("socket connection broken")
+                        username_set += chunk
+
+                    username_set = pickle.loads(username_set)
+
+                    conversations[convo_name['data']] = username_set
+                    conversations[convo_name['data']]
+
+
+
+
 
             # handle exception sockets
             for es in exception_sockets:

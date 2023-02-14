@@ -4,6 +4,7 @@ import time
 import datetime
 import sys
 import errno
+import pickle
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
 import constants
@@ -34,8 +35,30 @@ class Client(QObject):
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
 
+    # add a new conversation
     def add_convo(self, convo_name, username_set):
         self.conversations[convo_name] = username_set
+
+        # inform the server that a task will be sent next
+        self.client.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+        # ask the server to add this new conversation to the database
+        t = constants.TaskType.ADD_CONVO.value
+        self.client.send(str(constants.TaskType.ADD_CONVO.value).encode('utf-8'))
+
+        # send the convo name to the server
+        username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        self.client.send(username_header + convo_name.encode('utf-8'))
+
+        # serialize the data
+        data_serialized = pickle.dumps(username_set)
+
+        # send the length of the data first
+        header = len(data_serialized).to_bytes(constants.HEADER_SIZE, byteorder='big')
+        self.client.send(header)
+
+        # send the username set
+        self.client.sendall(data_serialized)
 
     def recv_file(self, filedir: str):
         f = open(filedir,'wb') #open in binary
@@ -51,7 +74,6 @@ class Client(QObject):
 
     def send_txt_to(self, target_username, txt):
         # first, send the message type
-        a = str(constants.MsgType.TEXT)
         self.client.send(str(constants.MsgType.TEXT.value).encode('utf-8'))
 
         # second, send the username to the server

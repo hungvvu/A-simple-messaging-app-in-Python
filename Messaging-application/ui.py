@@ -185,7 +185,7 @@ class Ui_Dialog(object):
             try:
                 member_set = set(member_list_raw.split(';')) # parse the usernames
 
-                if group_name and member_set:
+                if group_name and len(member_set) != 0:
                     newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
 
                     # create new button for the added conversation
