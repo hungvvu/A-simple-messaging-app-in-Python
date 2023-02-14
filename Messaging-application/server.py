@@ -157,7 +157,7 @@ class Server():
                             # if there is only two person in the conversation, it is a direct message
                             if len(self.conversations[target_info['data']]) <= 2:
                                 # get the user socket
-                                target_socket = self.get_sock_by_uinfo(target_info)
+                                target_socket = self.get_sock_by_uinfo(self.conversations[target_info['data']][0])
 
                                 # if the username does not exist, send back an error message to the client
                                 if not target_socket:
@@ -180,8 +180,8 @@ class Server():
                                 appended_username = (group_name + '/' + user.data.decode('utf-8')).encode('utf-8')
                                 appended_user_header = getLenHeader(appended_username)
 
-                                print(f'[INFO] {timestamp.decode("utf-8")}, received message from {user.data.decode("utf-8")} \
-                                    to group {group_name}: {message["data"].decode("utf-8")}')
+                                print(f'[INFO] {timestamp.decode("utf-8")}, received message from {user.data.decode("utf-8")} ' \
+                                    + f'to group {group_name}: {message["data"].decode("utf-8")}')
                                     
                                 
                                 # loop through all the user in the conversation
@@ -226,12 +226,12 @@ class Server():
                             username_set = pickle.loads(username_set)
 
                             # calculate username header for the usernames in the set and save it into conversation dictionary for later use
-                            conversation_info = set()
+                            conversation_info = []
                             for username in username_set:
                                 username_encoded = username.encode()
                                 username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
 
-                                conversation_info.add(UserInfo(username_header, username_encoded))
+                                conversation_info.append(UserInfo(username_header, username_encoded))
                             
 
                             # add the sender into the conversation

@@ -137,7 +137,7 @@ class Ui_Dialog(object):
             # make a timestamp from the current time
             timestamp = datetime.datetime.now().strftime("%H:%M")
 
-            self.textBrowser.append(f"[{timestamp}, You] > {message}")
+            self.textBrowser.append(f"[{timestamp}, You --> {self.active_convo}] > {message}")
             # target_username, ok = QInputDialog.getText(None, "Send message to", "Target's username: ")
             # if ok:
             self.client.send_txt_to(self.active_convo, message)
