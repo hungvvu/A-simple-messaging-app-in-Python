@@ -185,7 +185,7 @@ class Ui_Dialog(object):
 
             newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
 
-            # save the new conversation on the client side
+            # rename the convo on the client side
             self.client.add_convo(target_username, {target_username})
     
     def add_new_group_convo(self):
@@ -219,9 +219,12 @@ class Ui_Dialog(object):
         new_name, ok = QInputDialog.getText(None, "Renaming group", "New name: ")
 
         if ok:
+            old_name = convo.text()
             convo.setText(new_name)
 
-            # do some other things here
+            # send a group renaming task to the server
+            self.client.rename_convo(old_name, new_name)
+
 
     def chosen_conversation(self, button):
         self.clear_layout_color()

@@ -60,6 +60,24 @@ class Client(QObject):
         # send the username set
         self.client.sendall(data_serialized)
 
+    def rename_convo(self, old_name, new_name):
+        # rename the conversation on the local dictionary
+        self.conversations[new_name] = self.conversations.pop(old_name)        
+
+        # inform the server that a task will be sent next
+        self.client.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+        # ask the server to rename this conversation to a new name
+        self.client.send(str(constants.TaskType.RENAME_CONVO.value).encode('utf-8'))
+
+        # send the current convo name to the server
+        username_header = f"{len(old_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        self.client.send(username_header + old_name.encode('utf-8'))
+
+        # send the new convo name to the server
+        new_header = f"{len(new_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        self.client.send(new_header + new_name.encode('utf-8'))
+
     def recv_file(self, filedir: str):
         f = open(filedir,'wb') #open in binary
         l = self.client.recv(1024)
