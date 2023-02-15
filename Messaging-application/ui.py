@@ -59,7 +59,9 @@ class CreateGroupChatDialog(QtWidgets.QDialog):
         layout.addWidget(self.buttons)
 
 class GroupConvoButton(QtWidgets.QPushButton):
+    # signals for the group convo menu
     renameTriggered = QtCore.pyqtSignal()
+    addMem_Triggered = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -68,6 +70,9 @@ class GroupConvoButton(QtWidgets.QPushButton):
         menu = QtWidgets.QMenu(self)
         rename = menu.addAction("Rename")
         rename.triggered.connect(self.renameTriggered)
+
+        add_member = menu.addAction("Add member")
+        add_member.triggered.connect(self.addMem_Triggered)
 
         menu.exec_(self.mapToGlobal(event.pos()))
     
@@ -224,6 +229,7 @@ class Ui_Dialog(object):
 
                     newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
                     newConvo.renameTriggered.connect(lambda: self.rename_convo(newConvo))
+                    newConvo.addMem_Triggered.connect(lambda: self.add_new_member(newConvo))
 
                     # save the new conversation on the client side
                     self.client.add_convo(group_name, member_set)
@@ -239,13 +245,20 @@ class Ui_Dialog(object):
             old_name = convo.text()
             convo.setText(new_name)
 
-            # send a group renaming task to the server
+            # tell the client to rename the conversation
             self.client.rename_convo(old_name, new_name)
 
             # if the conversation was the active convo before the name change, make the new name the active convo
             if old_name == self.active_convo:
                 self.active_convo = new_name
 
+    def add_new_member(self, convo):
+        # ask user for member name
+        member_uname, ok = QInputDialog.getText(None, "Adding new member", "Member's username: ")
+
+        if ok:
+            # tell the client to add new member
+            self.client.add_new_member(convo.text(), member_uname)
 
     def chosen_conversation(self, button):
         self.clear_layout_color()

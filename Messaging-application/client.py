@@ -84,6 +84,32 @@ class Client(QObject):
         new_header = f"{len(new_name):<{constants.HEADER_SIZE}}".encode('utf-8')
         self.server.send(new_header + new_name.encode('utf-8'))
 
+    def add_new_member(self, convo_name, member_uname):
+        print(convo_name)
+        print(self.conversations)
+        # add the member if they are not in the conversation yet
+        if member_uname not in self.conversations[convo_name]:
+            self.conversations[convo_name].add(member_uname)
+
+            # inform the server that a task will be sent next
+            self.server.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+            # ask the server to add this new member
+            self.server.send(str(constants.TaskType.ADD_MEMBER.value).encode('utf-8'))
+
+            # send the conversation name to the server
+            self.send_txt_to_server(convo_name)
+
+            # send the member name to the server
+            self.send_txt_to_server(member_uname)
+            
+            # print the status to the screen
+            self.text_message_received.emit(f"[INFO] Member {member_uname} added to {convo_name}")
+        
+        else:
+            self.text_message_received.emit(f"[ERROR] Member {member_uname} is already in the group")
+
+
     # receive a text message from the server (with header + content) and parse it
     def receive_txt(self, client_socket):
         try:
