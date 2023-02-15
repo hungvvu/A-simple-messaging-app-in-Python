@@ -199,13 +199,18 @@ class Client(QObject):
                             old_name_str = old_name['data'].decode('utf-8')
 
                             # get the new conversation name
+                            print('code reach (4)')
                             new_name = self.receive_txt(self.server)
                             new_name_str = new_name['data'].decode('utf-8')
 
                             # rename the conversation on the local dictionary
+                            print('code reach (5)')
+                            print(f'conversation at old_name is: {old_name_str}')
                             self.conversations[new_name_str] = self.conversations.pop(old_name_str)
+                            print('code reach (6)')
 
                             # change the UI's group name
+                            print('sending rename signal')
                             self.rename_task_received.emit(old_name_str, new_name_str)
 
 
@@ -222,7 +227,7 @@ class Client(QObject):
                 continue
 
             except Exception as e:
-                print('Exception: '.format(str(e)))
+                print('Exception: {}'.format(str(e)))
                 sys.exit()
         
 

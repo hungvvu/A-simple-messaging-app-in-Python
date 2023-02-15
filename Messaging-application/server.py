@@ -85,6 +85,21 @@ class Server():
 
         client_socket.send(content)
 
+    # take in an old_name and a new_name in the form {'header': ..., 'data'}, and send it to a client
+    def send_renameTask_to(self, client_socket, old_name, new_name):
+        ## send a task to the user to revert the name change
+        # inform the client that a task will be sent next
+        client_socket.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+        # ask the client to rename this conversation back to the old name
+        client_socket.send(str(constants.TaskType.RENAME_CONVO.value).encode('utf-8'))
+
+        # send the old convo name to the client
+        client_socket.send(old_name['header'] + old_name['data'])
+
+        # send the new convo name to the client
+        client_socket.send(new_name['header'] + new_name['data'])
+
     # receive a text message from the client (with header + content) and parse it
     def receive_txt(self, client_socket):
         try:
@@ -304,6 +319,24 @@ class Server():
                                 self.conversations[new_name['data']] = self.conversations.pop(old_name['data'])
                                 # rename the conversation object's name variable
                                 self.conversations[new_name['data']].name = new_name['data']
+
+                                # inform the other member in the group about the name change
+                                # loop through all the user in the conversation
+                                for u in self.conversations[new_name['data']].member_list:
+                                    
+                                    if not u.isEqualTo(user):
+                                        # get the user socket
+                                        target_socket = self.get_sock_by_uinfo(u)
+
+                                        # if the username does not exist, send back an error message to the client
+                                        if not target_socket:
+                                            continue # do nothing for the time being
+                                    
+                                    
+                                        else:
+                                            # send the message to the target client(s)
+                                            self.send_renameTask_to(target_socket, old_name, new_name)
+
                             else:
                                 # send an error message to the user
                                 self.send_error_to(s, "Error: No required permission for name change")
