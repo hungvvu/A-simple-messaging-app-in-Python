@@ -59,6 +59,15 @@ class Server():
         # print("here")
         # # print out confirmation
         # print("Text from client: " + conf)
+    
+    # take in a raw error message and send it to the specified socket, with encoding and header
+    def send_error_to(self, timestamp, err_msg, client_socket):
+        err_msg_encoded = err_msg.encode('utf-8')
+        error_header = f"{len(err_msg_encoded):<{constants.HEADER_SIZE}}".encode()
+        content = str(constants.MsgType.ERROR.value).encode('utf-8') + self.client_info[client_socket].header \
+        + self.client_info[client_socket].data + timestamp + error_header + err_msg_encoded
+
+        client_socket.send(content)
 
     # receive a text message from the client (with header + content) and parse it
     def receive_txt(self, client_socket):
@@ -253,6 +262,39 @@ class Server():
 
                                 if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
                                     self.group_owners[convo_name['data']] = user
+                        
+                        elif task_type == str(constants.TaskType.RENAME_CONVO.value): # rename a conversation in the database
+                            # get the old conversation name
+                            old_name = self.receive_txt(s)
+                            # old_name_str = old_name.decode('utf-8')
+
+                            # get the new conversation name
+                            new_name = self.receive_txt(s)
+                            # new_name_str = new_name.decode('utf-8')
+
+                            # check if the user have owner rights or not
+                            if self.group_owners[old_name['data']].data == user.data:
+                                # rename the conversation on the local dictionary
+                                self.conversations[new_name['data']] = self.conversations.pop(old_name['data'])
+
+                            else:
+                                # send an error message to the user
+                                self.send_error_to(timestamp, "Error: No required permission for name change", s)
+
+                                ## send a task to the user to revert the name change
+                                # inform the client that a task will be sent next
+                                s.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+                                # ask the client to rename this conversation back to the old name
+                                s.send(str(constants.TaskType.RENAME_CONVO.value).encode('utf-8'))
+
+                                # send the new convo name to the client
+                                s.send(new_name['header'] + new_name['data'])
+
+                                # send the old convo name to the client
+                                s.send(old_name['header'] + old_name['data'])
+
+
 
 
 

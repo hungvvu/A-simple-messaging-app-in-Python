@@ -80,6 +80,7 @@ class Ui_Dialog(object):
         if ok:
             self.client = Client(constants.IP, constants.PORT, my_username)
             self.client.text_message_received.connect(self.update_chatbox) # connect the text_ceived signal to the handling function
+            self.client.rename_task_received.connect(self.update_convo_name) # handle the task required by the client
 
             # Start client in a separate thread
             self.client_thread = QThread()
@@ -160,6 +161,22 @@ class Ui_Dialog(object):
     def update_chatbox(self, message):
         self.textBrowser.append(message)
 
+    # update the specified convo name
+    def update_convo_name(self, old_name, new_name):
+        button = None
+        # find the button for the conversation with the given name
+        for widget in self.verticalLayout.findChildren(QtWidgets.QPushButton):
+            if widget.text() == old_name:
+                button = widget
+                break
+        
+        if button is not None:
+            # if the old_name was the active convo, update that to the new name
+            if old_name == self.active_convo:
+                self.active_convo = new_name
+
+            button.setText(new_name)
+
 
     def show_new_convo_menu(self):
         menu = QtWidgets.QMenu(self.pushButton_2)
@@ -224,6 +241,10 @@ class Ui_Dialog(object):
 
             # send a group renaming task to the server
             self.client.rename_convo(old_name, new_name)
+
+            # if the conversation was the active convo before the name change, make the new name the active convo
+            if old_name == self.active_convo:
+                self.active_convo = new_name
 
 
     def chosen_conversation(self, button):
