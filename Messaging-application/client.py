@@ -138,17 +138,16 @@ class Client(QObject):
                     # get the message type
                     msg_type = self.server.recv(1).decode('utf-8')
 
-                    # receive the sender's username
-                    sender_uname_header = self.server.recv(constants.HEADER_SIZE)
-
-                    # no data
-                    if not len(sender_uname_header):
-                        print('Connection closed by the server')
-                        sys.exit()
-
-
                     # handle the message type accordingly
                     if msg_type == str(constants.MsgType.TEXT.value):
+                        # receive the sender's username
+                        sender_uname_header = self.server.recv(constants.HEADER_SIZE)
+
+                        # no data
+                        if not len(sender_uname_header):
+                            print('Connection closed by the server')
+                            sys.exit()
+                        
                         # get the sender's username
                         username_length = int(sender_uname_header.decode('utf-8').strip())
 
@@ -166,6 +165,14 @@ class Client(QObject):
                         self.text_message_received.emit(f"[{timestamp}, {username}] > {message}")
 
                     elif msg_type == str(constants.MsgType.ERROR.value):
+                        # receive the sender's username
+                        sender_uname_header = self.server.recv(constants.HEADER_SIZE)
+
+                        # no data
+                        if not len(sender_uname_header):
+                            print('Connection closed by the server')
+                            sys.exit()
+                        
                         # get the sender's username
                         username_length = int(sender_uname_header.decode('utf-8').strip())
 
@@ -184,7 +191,8 @@ class Client(QObject):
 
                     elif msg_type == str(constants.MsgType.TASK.value):
                         # get the task type
-                        task_type = self.server.recv(1).decode()
+                        task_type = self.server.recv(1).decode('utf-8')
+                        print(f'task type: {task_type}')
                         
                         if task_type == str(constants.TaskType.RENAME_CONVO.value):
                             # get the old conversation name
@@ -199,7 +207,7 @@ class Client(QObject):
                             self.conversations[new_name_str] = self.conversations.pop(old_name_str)
 
                             # change the UI's group name
-                            self.task_received.emit(constants.TaskType.RENAME_CONVO.value, old_name_str, new_name_str)
+                            self.rename_task_received.emit(old_name_str, new_name_str)
 
 
             # handle exceptions

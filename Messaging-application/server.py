@@ -3,6 +3,7 @@ import socket
 import time
 import select
 import pickle
+import datetime
 
 import constants
 
@@ -61,7 +62,8 @@ class Server():
         # print("Text from client: " + conf)
     
     # take in a raw error message and send it to the specified socket, with encoding and header
-    def send_error_to(self, timestamp, err_msg, client_socket):
+    def send_error_to(self, client_socket, err_msg):
+        timestamp = datetime.datetime.now().strftime("%H:%M").encode('utf-8')
         err_msg_encoded = err_msg.encode('utf-8')
         error_header = f"{len(err_msg_encoded):<{constants.HEADER_SIZE}}".encode()
         content = str(constants.MsgType.ERROR.value).encode('utf-8') + self.client_info[client_socket].header \
@@ -279,7 +281,7 @@ class Server():
 
                             else:
                                 # send an error message to the user
-                                self.send_error_to(timestamp, "Error: No required permission for name change", s)
+                                self.send_error_to(s, "Error: No required permission for name change")
 
                                 ## send a task to the user to revert the name change
                                 # inform the client that a task will be sent next
@@ -287,6 +289,7 @@ class Server():
 
                                 # ask the client to rename this conversation back to the old name
                                 s.send(str(constants.TaskType.RENAME_CONVO.value).encode('utf-8'))
+                                print(str(constants.TaskType.RENAME_CONVO.value))
 
                                 # send the new convo name to the client
                                 s.send(new_name['header'] + new_name['data'])

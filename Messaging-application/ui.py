@@ -165,7 +165,7 @@ class Ui_Dialog(object):
     def update_convo_name(self, old_name, new_name):
         button = None
         # find the button for the conversation with the given name
-        for widget in self.verticalLayout.findChildren(QtWidgets.QPushButton):
+        for widget in self.verticalLayoutWidget.findChildren(QtWidgets.QPushButton):
             if widget.text() == old_name:
                 button = widget
                 break
