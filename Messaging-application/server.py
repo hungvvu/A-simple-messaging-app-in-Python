@@ -31,6 +31,20 @@ class UserInfo():
 
     # def get_uname
 
+# helper class to manage conversations on the server
+class Conversation():
+    def __init__(self, name, member_list=None, owner=None):
+        self.name = name
+        self.owner = owner
+        self.member_list = member_list
+
+    # take in a UserInfo object and determine whether the user is the owner or not
+    def is_owner(self, user):
+        if user.isEqualTo(self.owner):
+            return True
+        return False
+        
+
 class Server():
     def __init__(self, IP, PORT):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -93,9 +107,17 @@ class Server():
         return False
 
     def convo_exist(self, convo_name):
-        for c in self.conversations.keys():
-            if convo_name == c:
+        for c in self.conversations.values():
+            if convo_name == c.name:
                 return True
+            
+        return False
+    
+    # find a convo by name
+    def find_convo(self, convo_name):
+        for c in self.conversations.values():
+            if convo_name == c.name:
+                return c
             
         return False
 
@@ -174,9 +196,10 @@ class Server():
 
                         else:
                             # if there is only two person in the conversation, it is a direct message
-                            if len(self.conversations[target_info['data']]) <= 2:
+                            convo = self.find_convo(target_info['data'])
+                            if len(convo.member_list) <= 2:
                                 # get the user socket
-                                target_socket = self.get_sock_by_uinfo(self.conversations[target_info['data']][0])
+                                target_socket = self.get_sock_by_uinfo(convo.member_list[0])
 
                                 # if the username does not exist, send back an error message to the client
                                 if not target_socket:
@@ -204,7 +227,8 @@ class Server():
                                     
                                 
                                 # loop through all the user in the conversation
-                                for u in self.conversations[target_info['data']]:
+                                convo = self.find_convo(target_info['data'])
+                                for u in convo.member_list:
                                     
                                     if not u.isEqualTo(user):
                                         # get the user socket
@@ -260,10 +284,10 @@ class Server():
                             # save the conversation to the database if it is a new conversation
                             if not self.convo_exist(convo_name['data']):
                                 
-                                self.conversations[convo_name['data']] = conversation_info
+                                self.conversations[convo_name['data']] = Conversation(convo_name['data'], conversation_info)
 
                                 if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
-                                    self.group_owners[convo_name['data']] = user
+                                    self.conversations[convo_name['data']].owner = user
                         
                         elif task_type == str(constants.TaskType.RENAME_CONVO.value): # rename a conversation in the database
                             # get the old conversation name
@@ -275,10 +299,11 @@ class Server():
                             # new_name_str = new_name.decode('utf-8')
 
                             # check if the user have owner rights or not
-                            if self.group_owners[old_name['data']].data == user.data:
+                            if self.conversations[old_name['data']].is_owner(user):
                                 # rename the conversation on the local dictionary
                                 self.conversations[new_name['data']] = self.conversations.pop(old_name['data'])
-
+                                # rename the conversation object's name variable
+                                self.conversations[new_name['data']].name = new_name['data']
                             else:
                                 # send an error message to the user
                                 self.send_error_to(s, "Error: No required permission for name change")
@@ -289,7 +314,6 @@ class Server():
 
                                 # ask the client to rename this conversation back to the old name
                                 s.send(str(constants.TaskType.RENAME_CONVO.value).encode('utf-8'))
-                                print(str(constants.TaskType.RENAME_CONVO.value))
 
                                 # send the new convo name to the client
                                 s.send(new_name['header'] + new_name['data'])

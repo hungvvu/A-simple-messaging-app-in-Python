@@ -192,7 +192,6 @@ class Client(QObject):
                     elif msg_type == str(constants.MsgType.TASK.value):
                         # get the task type
                         task_type = self.server.recv(1).decode('utf-8')
-                        print(f'task type: {task_type}')
                         
                         if task_type == str(constants.TaskType.RENAME_CONVO.value):
                             # get the old conversation name
