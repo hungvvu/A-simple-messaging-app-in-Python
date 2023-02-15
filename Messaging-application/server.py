@@ -81,6 +81,13 @@ class Server():
         
         return False
 
+    def convo_exist(self, convo_name):
+        for c in self.conversations.keys():
+            if convo_name == c:
+                return True
+            
+        return False
+
     # get the socket by the user info
     def get_sock_by_uinfo(self, user_info):
         # # if the username does not exist, return false
@@ -212,6 +219,7 @@ class Server():
                             # get the conversation name
                             convo_name = self.receive_txt(s)
 
+
                             # receive the header to get the length of the data
                             set_header = s.recv(constants.HEADER_SIZE)
                             username_set_len = int.from_bytes(set_header, byteorder='big')
@@ -238,11 +246,13 @@ class Server():
                             # add the sender into the conversation
                             # conversation_info.add(UserInfo(user.header, user.data))
 
-                            # save the conversation to the database
-                            self.conversations[convo_name['data']] = conversation_info
+                            # save the conversation to the database if it is a new conversation
+                            if not self.convo_exist(convo_name['data']):
+                                
+                                self.conversations[convo_name['data']] = conversation_info
 
-                            if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
-                                self.group_owners[convo_name['data']] = user
+                                if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
+                                    self.group_owners[convo_name['data']] = user
 
 
 

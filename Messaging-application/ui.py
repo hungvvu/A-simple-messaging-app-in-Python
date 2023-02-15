@@ -58,6 +58,20 @@ class CreateGroupChatDialog(QtWidgets.QDialog):
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
 
+class GroupConvoButton(QtWidgets.QPushButton):
+    renameTriggered = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def contextMenuEvent(self, event):
+        menu = QtWidgets.QMenu(self)
+        rename = menu.addAction("Rename")
+        rename.triggered.connect(self.renameTriggered)
+
+        menu.exec_(self.mapToGlobal(event.pos()))
+    
+
 
 class Ui_Dialog(object):
     def __init__(self):
@@ -169,7 +183,7 @@ class Ui_Dialog(object):
             self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
             newConvo.setText(target_username)
 
-            newConvo.clicked.connect(lambda: self.chosen_conversation(target_username, newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
+            newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
 
             # save the new conversation on the client side
             self.client.add_convo(target_username, {target_username})
@@ -186,14 +200,13 @@ class Ui_Dialog(object):
                 member_set = set(member_list_raw.split(';')) # parse the usernames
 
                 if group_name and len(member_set) != 0:
-                    newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
-
                     # create new button for the added conversation
-                    # self.pushButton_2.setObjectName(target_username)
+                    newConvo = GroupConvoButton(self.verticalLayoutWidget)
                     self.verticalLayout.insertWidget(self.verticalLayout.indexOf(self.pushButton_2), newConvo)
                     newConvo.setText(group_name)
 
-                    newConvo.clicked.connect(lambda: self.chosen_conversation(group_name, newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
+                    newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
+                    newConvo.renameTriggered.connect(lambda: self.rename_convo(newConvo))
 
                     # save the new conversation on the client side
                     self.client.add_convo(group_name, member_set)
@@ -201,10 +214,19 @@ class Ui_Dialog(object):
             except ValueError as e:
                 QtWidgets.QMessageBox.warning(None, 'Error', str(e))
 
-    def chosen_conversation(self, target_username, button):
+    def rename_convo(self, convo):
+        # ask user for new name
+        new_name, ok = QInputDialog.getText(None, "Renaming group", "New name: ")
+
+        if ok:
+            convo.setText(new_name)
+
+            # do some other things here
+
+    def chosen_conversation(self, button):
         self.clear_layout_color()
         button.setStyleSheet("background-color: DarkOliveGreen")
-        self.active_convo = target_username
+        self.active_convo = button.text()
     
     # for clearing all color of the widgets in the layout
     def clear_layout_color(self):
