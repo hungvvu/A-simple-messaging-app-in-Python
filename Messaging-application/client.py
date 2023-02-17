@@ -85,10 +85,9 @@ class Client(QObject):
         self.server.send(new_header + new_name.encode('utf-8'))
 
     def add_new_member(self, convo_name, member_uname):
-        print(convo_name)
-        print(self.conversations)
         # add the member if they are not in the conversation yet
         if member_uname not in self.conversations[convo_name]:
+            # add member to the local dictionary
             self.conversations[convo_name].add(member_uname)
 
             # inform the server that a task will be sent next
@@ -215,6 +214,7 @@ class Client(QObject):
                         # emit a message receive signal that contain the error message
                         self.text_message_received.emit(f"{message}")
 
+
                     elif msg_type == str(constants.MsgType.TASK.value):
                         # get the task type
                         task_type = self.server.recv(1).decode('utf-8')
@@ -225,19 +225,38 @@ class Client(QObject):
                             old_name_str = old_name['data'].decode('utf-8')
 
                             # get the new conversation name
-                            print('code reach (4)')
                             new_name = self.receive_txt(self.server)
                             new_name_str = new_name['data'].decode('utf-8')
 
-                            # rename the conversation on the local dictionary
-                            print('code reach (5)')
-                            print(f'conversation at old_name is: {old_name_str}')
-                            self.conversations[new_name_str] = self.conversations.pop(old_name_str)
-                            print('code reach (6)')
+                            
+                            # check if the member has the group on their side already or not
+                            if old_name_str in self.conversations.keys():
+                                # rename the conversation on the local dictionary
+                                # print(f'conversation at old_name is: {old_name_str}')
+                                self.conversations[new_name_str] = self.conversations.pop(old_name_str)
 
-                            # change the UI's group name
-                            print('sending rename signal')
-                            self.rename_task_received.emit(old_name_str, new_name_str)
+                                # change the UI's group name
+                                self.rename_task_received.emit(old_name_str, new_name_str)
+                            
+                            # if the member hasn't add the conversation yet, no need to change anything
+
+                        
+                        elif task_type == str(constants.TaskType.ADD_MEMBER.value):
+                            # get the conversation name
+                            convo_name = self.receive_txt(self.server)
+                            convo_name_str = convo_name['data'].decode('utf-8')
+
+                            # get the new member name
+                            newMem_uname = self.receive_txt(self.server)
+                            newMem_uname_str = newMem_uname['data'].decode('utf-8')
+
+                            
+                            # check if the member has the groupchat on their side already or not
+                            if convo_name_str in self.conversations.keys():
+                                # add the member to the local dictionary
+                                self.conversations[convo_name_str].add(newMem_uname_str)
+                            
+                            # if the member hasn't add the conversation yet, no need to change anything
 
 
             # handle exceptions

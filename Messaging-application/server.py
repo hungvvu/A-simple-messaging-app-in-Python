@@ -87,7 +87,6 @@ class Server():
 
     # take in an old_name and a new_name in the form {'header': ..., 'data'}, and send it to a client
     def send_renameTask_to(self, client_socket, old_name, new_name):
-        ## send a task to the user to revert the name change
         # inform the client that a task will be sent next
         client_socket.send(str(constants.MsgType.TASK.value).encode('utf-8'))
 
@@ -99,6 +98,21 @@ class Server():
 
         # send the new convo name to the client
         client_socket.send(new_name['header'] + new_name['data'])
+
+    # take in convo_name and member username in the form {'header': ..., 'data'}, and send it to a client
+    def send_addMemTask_to(self, client_socket, convo_name, mem_uname):
+        # inform the client that a task will be sent next
+        client_socket.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+        # ask the client to add the member to its local list for the conversation
+        client_socket.send(str(constants.TaskType.ADD_MEMBER.value).encode('utf-8'))
+
+        # send the convo name to the client
+        client_socket.send(convo_name['header'] + convo_name['data'])
+
+        # send the new member username to the client
+        client_socket.send(mem_uname['header'] + mem_uname['data'])
+        
 
     # receive a text message from the client (with header + content) and parse it
     def receive_txt(self, client_socket):
@@ -304,6 +318,7 @@ class Server():
                                 if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
                                     self.conversations[convo_name['data']].owner = user
                         
+
                         elif task_type == str(constants.TaskType.RENAME_CONVO.value): # rename a conversation in the database
                             # get the old conversation name
                             old_name = self.receive_txt(s)
@@ -355,7 +370,36 @@ class Server():
                                 s.send(old_name['header'] + old_name['data'])
 
 
+                        elif task_type == str(constants.TaskType.ADD_MEMBER.value):
+                            # get the conversation name
+                            convo_name = self.receive_txt(s)
 
+                            # get the new member username
+                            mem_uname = self.receive_txt(s)
+
+
+                            # check if the user have owner rights or not
+                            if self.conversations[convo_name['data']].is_owner(user):
+                                # add new member to the conversation on the local dictionary
+                                self.conversations[convo_name['data']].member_list.append(UserInfo(mem_uname['header'], mem_uname['data']))
+
+                                ## inform the other member in the group about the new member
+                                # loop through all the user in the conversation
+                                for u in self.conversations[convo_name['data']].member_list:
+                                    
+                                    # tell everyone except the original sender
+                                    if not u.isEqualTo(user):
+                                        # get the user socket
+                                        target_socket = self.get_sock_by_uinfo(u)
+
+                                        # if the username does not exist, send back an error message to the client
+                                        if not target_socket:
+                                            continue # do nothing for the time being
+                                    
+                                    
+                                        else:
+                                            # send the message to the target client(s)
+                                            self.send_addMemTask_to(target_socket, convo_name, mem_uname)
 
 
 
