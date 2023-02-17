@@ -17,3 +17,4 @@ class TaskType(Enum):
     ADD_CONVO = 1
     RENAME_CONVO = 2
     ADD_MEMBER = 3
+    REMV_MEMBER = 4

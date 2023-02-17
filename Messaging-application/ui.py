@@ -62,6 +62,7 @@ class GroupConvoButton(QtWidgets.QPushButton):
     # signals for the group convo menu
     renameTriggered = QtCore.pyqtSignal()
     addMem_Triggered = QtCore.pyqtSignal()
+    remvMem_Triggered = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -73,6 +74,9 @@ class GroupConvoButton(QtWidgets.QPushButton):
 
         add_member = menu.addAction("Add member")
         add_member.triggered.connect(self.addMem_Triggered)
+
+        remv_member = menu.addAction("Remove member")
+        remv_member.triggered.connect(self.remvMem_Triggered)
 
         menu.exec_(self.mapToGlobal(event.pos()))
     
@@ -230,6 +234,7 @@ class Ui_Dialog(object):
                     newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
                     newConvo.renameTriggered.connect(lambda: self.rename_convo(newConvo))
                     newConvo.addMem_Triggered.connect(lambda: self.add_new_member(newConvo))
+                    newConvo.remvMem_Triggered.connect(lambda: self.remv_member(newConvo))
 
                     # save the new conversation on the client side
                     self.client.add_convo(group_name, member_set)
@@ -259,6 +264,14 @@ class Ui_Dialog(object):
         if ok:
             # tell the client to add new member
             self.client.add_new_member(convo.text(), member_uname)
+
+    def remv_member(self, convo):
+        # ask user for member name
+        member_uname, ok = QInputDialog.getText(None, "Removing member", "Member's username: ")
+
+        if ok:
+            # tell the client to add new member
+            self.client.remv_member(convo.text(), member_uname)
 
     def chosen_conversation(self, button):
         self.clear_layout_color()

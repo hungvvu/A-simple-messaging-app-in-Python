@@ -108,6 +108,30 @@ class Client(QObject):
         else:
             self.text_message_received.emit(f"[ERROR] Member {member_uname} is already in the group")
 
+    def remv_member(self, convo_name, member_uname):
+        # remove the member if they are in the conversation
+        if member_uname in self.conversations[convo_name]:
+            # add member to the local dictionary
+            self.conversations[convo_name].remove(member_uname)
+
+            # inform the server that a task will be sent next
+            self.server.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+            # ask the server to remove this member
+            self.server.send(str(constants.TaskType.REMV_MEMBER.value).encode('utf-8'))
+
+            # send the conversation name to the server
+            self.send_txt_to_server(convo_name)
+
+            # send the member name to the server
+            self.send_txt_to_server(member_uname)
+            
+            # print the status to the screen
+            self.text_message_received.emit(f"[INFO] Member {member_uname} removed from {convo_name}")
+        
+        else:
+            self.text_message_received.emit(f"[ERROR] Member {member_uname} is not in the group")
+
 
     # receive a text message from the server (with header + content) and parse it
     def receive_txt(self, client_socket):
@@ -255,6 +279,28 @@ class Client(QObject):
                             if convo_name_str in self.conversations.keys():
                                 # add the member to the local dictionary
                                 self.conversations[convo_name_str].add(newMem_uname_str)
+                            
+                            # if the member hasn't add the conversation yet, no need to change anything
+
+
+                        elif task_type == str(constants.TaskType.REMV_MEMBER.value):
+                            # get the conversation name
+                            convo_name = self.receive_txt(self.server)
+                            convo_name_str = convo_name['data'].decode('utf-8')
+
+                            # get the member name
+                            mem_uname = self.receive_txt(self.server)
+                            mem_uname_str = mem_uname['data'].decode('utf-8')
+
+                            
+                            # check if the member has the groupchat on their side already or not
+                            if convo_name_str in self.conversations.keys():
+                                # remove the member if they are in the conversation
+                                if mem_uname in self.conversations[convo_name]:
+                                    # add the member to the local dictionary
+                                    self.conversations[convo_name_str].remove(newMem_uname_str)
+
+
                             
                             # if the member hasn't add the conversation yet, no need to change anything
 

@@ -21,6 +21,9 @@ class UserInfo():
         self.header = header
         self.data = data
 
+    def __hash__(self):
+        return hash((self.name, self.age))
+
     def isEqualTo(self, thatUserInfo):
         if self.data == thatUserInfo.data:
             return True
@@ -43,6 +46,18 @@ class Conversation():
         if user.isEqualTo(self.owner):
             return True
         return False
+    
+    # find index of a member in the conversation with a certain condition function
+    def indexOfMemberWith(self, condition_func):
+        try:
+            return next(i for i, element in enumerate(self.member_list) if condition_func(element))
+        except StopIteration:
+            return -1
+        
+    # take in a UserInfo object and remove that user from the group
+    def remove_member(self, user):
+        index = self.indexOfMemberWith(user.isEqualTo)
+        del self.member_list[index]
         
 
 class Server():
@@ -101,6 +116,20 @@ class Server():
 
     # take in convo_name and member username in the form {'header': ..., 'data'}, and send it to a client
     def send_addMemTask_to(self, client_socket, convo_name, mem_uname):
+        # inform the client that a task will be sent next
+        client_socket.send(str(constants.MsgType.TASK.value).encode('utf-8'))
+
+        # ask the client to add the member to its local list for the conversation
+        client_socket.send(str(constants.TaskType.ADD_MEMBER.value).encode('utf-8'))
+
+        # send the convo name to the client
+        client_socket.send(convo_name['header'] + convo_name['data'])
+
+        # send the new member username to the client
+        client_socket.send(mem_uname['header'] + mem_uname['data'])
+
+    # take in convo_name and member username in the form {'header': ..., 'data'}, and send a remove member task to a client
+    def send_remvMemTask_to(self, client_socket, convo_name, mem_uname):
         # inform the client that a task will be sent next
         client_socket.send(str(constants.MsgType.TASK.value).encode('utf-8'))
 
@@ -224,9 +253,9 @@ class Server():
 
 
                         else:
-                            # if there is only two person in the conversation, it is a direct message
+                            # if there is only one person (other than the sender) in the conversation, it is a direct message
                             convo = self.find_convo(target_info['data'])
-                            if len(convo.member_list) <= 2:
+                            if len(convo.member_list) <= 1:
                                 # get the user socket
                                 target_socket = self.get_sock_by_uinfo(convo.member_list[0])
 
@@ -396,10 +425,42 @@ class Server():
                                         if not target_socket:
                                             continue # do nothing for the time being
                                     
-                                    
                                         else:
                                             # send the message to the target client(s)
                                             self.send_addMemTask_to(target_socket, convo_name, mem_uname)
+
+
+                        elif task_type == str(constants.TaskType.REMV_MEMBER.value):
+                            # get the conversation name
+                            convo_name = self.receive_txt(s)
+
+                            # get the new member username
+                            mem_uname = self.receive_txt(s)
+
+
+                            # check if the user have owner rights or not
+                            if self.conversations[convo_name['data']].is_owner(user):
+                                print(self.conversations[convo_name['data']].indexOfMemberWith(user.isEqualTo))
+                                # remove the member from the conversation on the local dictionary
+                                self.conversations[convo_name['data']].remove_member(UserInfo(mem_uname['header'], mem_uname['data']))
+
+                                ## inform the other member in the group about the removal
+                                # loop through all the user in the conversation
+                                for u in self.conversations[convo_name['data']].member_list:
+                                    
+                                    # tell everyone except the original sender
+                                    if not u.isEqualTo(user):
+                                        # get the user socket
+                                        target_socket = self.get_sock_by_uinfo(u)
+
+                                        # if the username does not exist, send back an error message to the client
+                                        if not target_socket:
+                                            continue # do nothing for the time being
+                                    
+                                    
+                                        else:
+                                            # send the message to the target client(s)
+                                            self.send_remvMemTask_to(target_socket, convo_name, mem_uname)
 
 
 
