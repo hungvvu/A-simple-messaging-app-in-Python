@@ -132,6 +132,17 @@ class Client(QObject):
         else:
             self.text_message_received.emit(f"[ERROR] Member {member_uname} is not in the group")
 
+    def view_member_list(self, convo_name):
+        # make the member list string
+        memL_str = ''
+        for mem in self.conversations[convo_name]:
+            memL_str = memL_str + mem + '; '
+        
+        # remove the last '; ' character
+        memL_str = memL_str[:-2]
+        # print the members to the screen
+        self.text_message_received.emit(f"[INFO] Member list: {memL_str}")
+
 
     # receive a text message from the server (with header + content) and parse it
     def receive_txt(self, client_socket):

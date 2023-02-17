@@ -63,6 +63,7 @@ class GroupConvoButton(QtWidgets.QPushButton):
     renameTriggered = QtCore.pyqtSignal()
     addMem_Triggered = QtCore.pyqtSignal()
     remvMem_Triggered = QtCore.pyqtSignal()
+    view_memList_Triggered = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -77,6 +78,9 @@ class GroupConvoButton(QtWidgets.QPushButton):
 
         remv_member = menu.addAction("Remove member")
         remv_member.triggered.connect(self.remvMem_Triggered)
+
+        view_member_list = menu.addAction("Member list")
+        view_member_list.triggered.connect(self.view_memList_Triggered)
 
         menu.exec_(self.mapToGlobal(event.pos()))
     
@@ -235,6 +239,7 @@ class Ui_Dialog(object):
                     newConvo.renameTriggered.connect(lambda: self.rename_convo(newConvo))
                     newConvo.addMem_Triggered.connect(lambda: self.add_new_member(newConvo))
                     newConvo.remvMem_Triggered.connect(lambda: self.remv_member(newConvo))
+                    newConvo.view_memList_Triggered.connect(lambda: self.view_member_list(newConvo))
 
                     # save the new conversation on the client side
                     self.client.add_convo(group_name, member_set)
@@ -272,6 +277,10 @@ class Ui_Dialog(object):
         if ok:
             # tell the client to add new member
             self.client.remv_member(convo.text(), member_uname)
+
+    def view_member_list(self, convo):
+        # tell the client about the view request
+        self.client.view_member_list(convo.text())
 
     def chosen_conversation(self, button):
         self.clear_layout_color()
