@@ -84,24 +84,25 @@ class Server():
         self.conversations = {}
         self.group_owners = {}
 
-    def send_file(s: socket, c: socket, filedir: str):
-    # read a photo from a file as binary
-        f = open(filedir, 'rb')
-        l = f.read(1024)
-        # send the photo
-        while (l):
-            c.send(l)
-            l = f.read(1024)
-        f.close()
-        # c.send('done'.encode())
+    # def send_file(self, client_socket, file_dir: str):
+    #     filesize = os.path.getsize(filename)
+    # # read a photo from a file as binary
+    #     f = open(filedir, 'rb')
+    #     l = f.read(1024)
+    #     # send the photo
+    #     while (l):
+    #         c.send(l)
+    #         l = f.read(1024)
+    #     f.close()
+    #     # c.send('done'.encode())
         
-        # conf = ''
-        # # wait for confirmation from the client
-        # while conf == '':
-        #     conf = c.recv(20).decode()
-        # print("here")
-        # # print out confirmation
-        # print("Text from client: " + conf)
+    #     # conf = ''
+    #     # # wait for confirmation from the client
+    #     # while conf == '':
+    #     #     conf = c.recv(20).decode()
+    #     # print("here")
+    #     # # print out confirmation
+    #     # print("Text from client: " + conf)
     
     # take in a raw error message and send it to the specified socket, with encoding and header
     def send_error_to(self, client_socket, err_msg):
@@ -411,6 +412,39 @@ class Server():
                         else:
                             # forward the read receipt to the user
                             self.send_readReceipt_to(target_socket, convo_name, self.client_info[s])
+
+
+
+                    elif msg_type == str(constants.MsgType.FILE.value): # a file
+                        # get the target user
+                        target_user = self.receive_txt(s)
+
+                        # get the user socket
+                        target_socket = self.get_sock_by_uinfo(UserInfo(target_user['header'],target_user['data']))
+
+                        # get the file size#$here
+                        file_size = int(s.recv(constants.HEADER_SIZE).decode('utf-8'))
+
+                        # send all the information above to the target
+                        # inform the user that a file will be sent next
+                        target_socket.send(str(constants.MsgType.FILE.value).encode('utf-8'))
+
+                        target_socket.send(target_user['header'] + target_user['data'])
+
+                        # Send the file size
+                        target_socket.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here
+
+                        # Receive the file and forward it to the target in small chunks
+                        total_received = 0
+                        while total_received < file_size:
+                            # Receive a chunk of the file
+                            chunk = s.recv(min(file_size - total_received, constants.BUFFER_SIZE))
+
+                            # Update the total number of bytes received
+                            total_received += len(chunk)
+
+                            # forward the chunk to the target
+                            target_socket.send(chunk)
 
 
 

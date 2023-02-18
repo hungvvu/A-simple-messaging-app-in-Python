@@ -3,6 +3,7 @@ import socket
 import time
 import datetime
 import sys
+import os
 import errno
 import pickle
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
@@ -35,9 +36,12 @@ class Client(QObject):
         # store all conversations and a list of user who have read this user's newest message
         self.msg_read = {}
 
+        self.halt = False # variable to halt client execution
+
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
     rename_task_received = pyqtSignal(str, str)
+    file_message_received = pyqtSignal(int)
 
     # take in a raw text string and send that to the server, encoded and with a header prepended
     def send_txt_to_server(self, text):
@@ -52,7 +56,7 @@ class Client(QObject):
         # username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
         # self.server.send(username_header + convo_name.encode('utf-8'))
         self.send_txt_to_server(convo_name)
-#$here
+
         # send the original_sender
         # sender_header = f"{len(original_sender):<{constants.HEADER_SIZE}}".encode('utf-8')
         # self.server.send(sender_header + original_sender.encode('utf-8'))
@@ -191,16 +195,49 @@ class Client(QObject):
         except:
             return False
 
-    def recv_file(self, filedir: str):
-        f = open(filedir,'wb') #open in binary
-        l = self.server.recv(1024)
+    def recv_file(self, accept, filedir: str, file_size):
+        if accept:# the client accepted the file
+            # Initialize a variable to keep track of the total number of bytes received
+            total_received = 0
+            f = open(filedir,'wb') #open in binary
 
-        while (l):
-            f.write(l)
-            l = self.server.recv(1024)
-        f.close
+            # Receive the file in small chunks
+            while total_received < file_size:
+                # Receive a chunk of the file
+                chunk = self.server.recv(min(file_size - total_received, constants.BUFFER_SIZE))
 
-        self.server.send('Nice potato.'.encode())
+                # Update the total number of bytes received
+                total_received += len(chunk)
+
+                # Write the received data to the file
+                with open(filedir, 'ab') as f:
+                    f.write(chunk)
+
+            f.close()
+            # f = open(filedir,'wb') #open in binary
+            # l = self.server.recv(1024)
+
+            # while (l):
+            #     f.write(l)
+            #     l = self.server.recv(1024)
+            # f.close
+
+            # self.server.send('Nice potato.'.encode())
+        
+        else: # the client declined the file
+            # discard the file by calling receive but not write it to anywhere
+            total_received = 0
+
+            # Receive the file in small chunks
+            while total_received < file_size:
+                # Receive a chunk of the file
+                chunk = self.server.recv(min(file_size - total_received, constants.BUFFER_SIZE))
+
+                # Update the total number of bytes received
+                total_received += len(chunk)
+
+            # something
+        return True
 
 
     def send_txt_to(self, target_username, txt):
@@ -224,6 +261,39 @@ class Client(QObject):
 
         # empty the message read list for this conversation because there is a new message
         self.msg_read[target_username] = []
+
+    def send_file_to(self, target_username, file_dir):
+        # Open the file to be sent
+        f = open(file_dir, 'rb')
+
+        # Get the file size
+        file_size = os.path.getsize(file_dir)
+
+        # inform the server that a file will be sent next
+        self.server.send(str(constants.MsgType.FILE.value).encode('utf-8'))
+
+        # send the username to the server
+        username = target_username.encode()
+        username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
+        self.server.send(username_header + username)
+
+        # Send the file size
+        self.server.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here
+
+        # Split the file into small chunks and send each chunk
+        total_sent = 0
+        while total_sent < file_size:
+            chunk = f.read(min(file_size - total_sent, constants.BUFFER_SIZE))
+
+            # Update the total number of bytes received
+            total_sent += len(chunk)
+
+            if not chunk:
+                break
+            self.server.send(chunk)
+
+        # Close the file
+        f.close()
 
     @pyqtSlot()
     def run(self):
@@ -284,6 +354,15 @@ class Client(QObject):
                         # add the user to the msg_read list for this conversation
                         self.msg_read[convo_name_str].append(username_str)
 
+
+                    elif msg_type == str(constants.MsgType.FILE.value):
+                        #$here
+                        file_size = self.server.recv(constants.HEADER_SIZE).decode('utf-8')
+                        self.file_message_received.emit(int(file_size))
+
+                        self.halt = True # halt until user made decision on accepting the file or not
+                        while self.halt:
+                            time.sleep(MESSAGE_SCAN_DELAY)
 
 
                     elif msg_type == str(constants.MsgType.ERROR.value):

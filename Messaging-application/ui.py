@@ -10,7 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QThread, QMetaObject, Qt
-from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QInputDialog, QMessageBox
 from client import *
 
 import constants
@@ -84,7 +84,7 @@ class GroupConvoButton(QtWidgets.QPushButton):
         view_member_list.triggered.connect(self.view_memList_Triggered)
 
         read_status = menu.addAction("Check read status")
-        read_status.triggered.connect(self.readStatus_Triggered)#$here
+        read_status.triggered.connect(self.readStatus_Triggered)
 
         menu.exec_(self.mapToGlobal(event.pos()))
 
@@ -99,7 +99,7 @@ class DirectConvoButton(QtWidgets.QPushButton):
     def contextMenuEvent(self, event):
         menu = QtWidgets.QMenu(self)
         read_status = menu.addAction("Check read status")
-        read_status.triggered.connect(self.readStatus_Triggered)#$here
+        read_status.triggered.connect(self.readStatus_Triggered)
     
         menu.exec_(self.mapToGlobal(event.pos()))
 
@@ -112,6 +112,7 @@ class Ui_Dialog(object):
             self.client = Client(constants.IP, constants.PORT, my_username)
             self.client.text_message_received.connect(self.update_chatbox) # connect the text_ceived signal to the handling function
             self.client.rename_task_received.connect(self.update_convo_name) # handle the task required by the client
+            self.client.file_message_received.connect(self.file_received)
 
             # Start client in a separate thread
             self.client_thread = QThread()
@@ -210,6 +211,34 @@ class Ui_Dialog(object):
 
             button.setText(new_name)
 
+    def file_received(self, file_size):
+        # create a message box
+        message_box = QMessageBox(self)
+        message_box.setWindowTitle("File Receive")
+        message_box.setText("Would you like to receive the file?")
+
+        # add buttons
+        yes_button = message_box.addButton(QMessageBox.Yes)
+        no_button = message_box.addButton(QMessageBox.No)
+
+        # show the message box
+        message_box.exec_()
+
+        recv_status = False
+        # check which button was clicked
+        if message_box.clickedButton() == yes_button:
+            # handle "yes"
+            recv_status = self.client.recv_file(True)#$here
+        elif message_box.clickedButton() == no_button:
+            # handle "no"
+            recv_status = self.client.recv_file(False, '/receive/test_receive.txt', file_size)
+
+        if recv_status:
+            # continue the client's execution
+            self.client.halt = False
+        else:
+            self.update_chatbox('[ERROR] Fail to receive file')
+
 
     def show_new_convo_menu(self):
         menu = QtWidgets.QMenu(self.pushButton_2)
@@ -306,7 +335,6 @@ class Ui_Dialog(object):
     def check_readStatus(self, convo):
         # tell the client about the check read status request
         self.client.check_readStatus(convo.text())
-        #$here
 
     def chosen_conversation(self, button):
         self.clear_layout_color()

@@ -14,6 +14,7 @@ class MsgType(Enum):
     TEXT = 1
     TASK = 2
     READ_RECEIPT = 3
+    FILE = 4
 
 class TaskType(Enum):
     ADD_CONVO = 1
