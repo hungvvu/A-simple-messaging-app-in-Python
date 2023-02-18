@@ -21,6 +21,7 @@ class UserInfo():
         self.header = header
         self.data = data
         self.online_status = online_status # the user default state is offline
+        self.msg_buffer = [] # the message buffer to store messages when user go offline
 
     def __hash__(self):
         return hash((self.name, self.age))
@@ -34,7 +35,7 @@ class UserInfo():
         self.online_status = True
 
     def offline(self):
-        self.offline_status = False
+        self.online_status = False
 
     # def get_header(self):
     #     return self.header
@@ -250,7 +251,7 @@ class Server():
 
                 # if s is a socket other than the server, we have gotten a new message to read
                 else:
-
+                        
                     user = self.client_info[s]
 
                     # first, get the message type
@@ -283,17 +284,34 @@ class Server():
 
                                 # if the username does not exist, send back an error message to the client
                                 if not target_socket:
-                                    error_msg = f"[Error] \"{target_info['data'].decode('utf-8')}\" username not found".encode()
+                                    error_msg = f"[ERROR] \"{target_info['data'].decode('utf-8')}\" username not found".encode()
                                     error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
                                     s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
                             
                             
                                 else:
-                                    # send the message to the target client(s)
-                                    target_socket.send(str(msg_type).encode('utf-8') + user.header + user.data + timestamp + message['header'] + message['data'])
+                                    # get the user info
+                                    target_user = self.client_info[target_socket]
+                                    
+                                    # if the user is online
+                                    if target_user.online_status:
+                                        # send the message to the target client(s)
+                                        target_socket.send(str(msg_type).encode('utf-8') + user.header + user.data + timestamp + message['header'] + message['data'])
 
-                                    print(f'[INFO] Received message from {user.data.decode("utf-8")}: '\
-                                          + f'{message["data"].decode("utf-8")}')
+                                        print(f'[INFO] Received message from {user.data.decode("utf-8")} to {target_user.data.decode("utf-8")}: '\
+                                            + f'{message["data"].decode("utf-8")}')
+                                    else:
+                                        # buffer the message and inform the sender
+                                        target_user.msg_buffer.append(str(msg_type).encode('utf-8') + user.header + user.data \
+                                                                           + timestamp + message['header'] + message['data'])
+                                        
+                                        self.send_error_to(s, "[INFO] User {} is currently offline, ".format(target_user.data.decode('utf-8')) \
+                                                            + "your message will be stored and forwarded once they go online again")
+                                        
+                                        #$here
+
+
+
 
                             # else it is a group message
                             else:
@@ -317,14 +335,28 @@ class Server():
 
                                         # if the username does not exist, send back an error message to the client
                                         if not target_socket:
-                                            error_msg = f"[Error] \"{u.data.decode('utf-8')}\" username not found".encode()
+                                            error_msg = f"[ERROR] \"{u.data.decode('utf-8')}\" username not found".encode()
                                             error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
                                             s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
                                     
                                     
                                         else:
-                                            # send the message to the target client(s)
-                                            target_socket.send(str(msg_type).encode('utf-8') + appended_user_header + appended_username + timestamp + message['header'] + message['data'])
+                                            # get the user info
+                                            target_user = self.client_info[target_socket]
+                                            # if the user is online
+                                            if target_user.online_status:
+                                                # send the message to the target client(s)
+                                                target_socket.send(str(msg_type).encode('utf-8') + appended_user_header \
+                                                                    + appended_username + timestamp + message['header'] + message['data'])
+
+                                            else:
+                                                # buffer the message and inform the sender
+                                                target_user.msg_buffer.append(str(msg_type).encode('utf-8') + user.header + user.data \
+                                                                                + timestamp + message['header'] + message['data'])
+                                                
+                                                self.send_error_to(s, "[INFO] User {} is currently offline, your message will be stored \
+                                                                    and forwarded once they go online again".format(target_user.data.decode('utf-8')))
+                                                
 
 
                     elif msg_type == str(constants.MsgType.TASK.value): # a task to be executed
@@ -412,7 +444,7 @@ class Server():
 
                             else:
                                 # send an error message to the user
-                                self.send_error_to(s, "[Error] No required permission for name change")
+                                self.send_error_to(s, "[ERROR] No required permission for name change")
 
                                 ## send a task to the user to revert the name change
                                 # inform the client that a task will be sent next
