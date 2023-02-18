@@ -423,6 +423,9 @@ class Server():
                         # get the user socket
                         target_socket = self.get_sock_by_uinfo(target_user)
 
+                        # get the file name
+                        file_name = self.receive_txt(s)
+
                         # get the file size#$here
                         file_size = int(s.recv(constants.HEADER_SIZE).decode('utf-8'))
 
@@ -434,6 +437,8 @@ class Server():
                         target_socket.send(str(constants.MsgType.FILE.value).encode('utf-8'))
 
                         target_socket.send(user.header + user.data)
+
+                        target_socket.send(file_name['header'] + file_name['data'])
 
                         # Send the file size
                         target_socket.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here

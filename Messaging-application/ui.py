@@ -215,11 +215,14 @@ class Ui_Dialog(object):
 
             button.setText(new_name)
 
-    def file_received(self, username, file_size):
+    def file_received(self, username, filename, file_size):
         # create a message box
         message_box = QMessageBox(self.verticalLayoutWidget)
         message_box.setWindowTitle("File Received")
-        message_box.setText("User {} sent you a file, would you like to receive it?".format(username))
+        message_box.setText(f"User {username} sent you a file.\n"\
+                            + f"Name: \"{filename}\"\n"\
+                            + f"Size: {file_size} Bytes\n" \
+                            + "Would you like to receive it?")
 
         # add buttons
         yes_button = message_box.addButton(QMessageBox.Yes)
@@ -234,18 +237,22 @@ class Ui_Dialog(object):
             # handle "yes"
             # get the save path, for the time being let just make it a fixed path relative to the script
             current_directory = os.path.dirname(os.path.abspath(__file__))
-            file_directory = os.path.join(current_directory, 'received', 'test_receive.txt')
+            file_directory = os.path.join(current_directory, 'received', filename)
 
             recv_status = self.client.recv_file(True, file_directory, file_size)
+            self.update_chatbox('[INFO] File \"{}\" from {} received successfully'.format(filename, username))
+
         elif message_box.clickedButton() == no_button:
             # handle "no"
-            recv_status = self.client.recv_file(False)
+            recv_status = self.client.recv_file(False, '', file_size)
+            self.update_chatbox('[INFO] File \"{}\" from {} discarded'.format(filename, username))
 
         if recv_status:
             # continue the client's execution
             self.client.halt = False
+            
         else:
-            self.update_chatbox('[ERROR] Fail to receive file')
+            self.update_chatbox('[ERROR] Failed to receive file')
 
 
     def show_new_convo_menu(self):

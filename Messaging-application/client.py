@@ -41,7 +41,7 @@ class Client(QObject):
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
     rename_task_received = pyqtSignal(str, str)
-    file_message_received = pyqtSignal(str, int)
+    file_message_received = pyqtSignal(str, str, int)
 
     # take in a raw text string and send that to the server, encoded and with a header prepended
     def send_txt_to_server(self, text):
@@ -265,6 +265,7 @@ class Client(QObject):
     def send_file_to(self, target_username, file_dir):
         # Open the file to be sent
         f = open(file_dir, 'rb')
+        file_name = file_dir.split("/")[-1]
 
         # Get the file size
         file_size = os.path.getsize(file_dir)
@@ -272,10 +273,13 @@ class Client(QObject):
         # inform the server that a file will be sent next
         self.server.send(str(constants.MsgType.FILE.value).encode('utf-8'))
 
-        # send the username to the server
+        # send the username to the server $here
         username = target_username.encode()
         username_header = f"{len(username):<{constants.HEADER_SIZE}}".encode()
         self.server.send(username_header + username)
+
+        # send the file name
+        self.send_txt_to_server(file_name)
 
         # Send the file size
         self.server.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here
@@ -357,7 +361,7 @@ class Client(QObject):
 
                     elif msg_type == str(constants.MsgType.FILE.value):
                         #$here
-                        # receive the sender's username
+                        # receive the sender's username header
                         sender_uname_header = self.server.recv(constants.HEADER_SIZE)
 
                         # no data
@@ -370,15 +374,17 @@ class Client(QObject):
 
                         username = self.server.recv(username_length).decode('utf-8')
 
+                        # get the filename
+                        filename = self.receive_txt(self.server)
+                        filename_str = filename['data'].decode('utf-8')
+
 
                         file_size = self.server.recv(constants.HEADER_SIZE).decode('utf-8')
 
-                        self.file_message_received.emit(username, int(file_size))
+                        self.file_message_received.emit(username, filename_str, int(file_size))
                         self.halt = True # halt until user made decision on accepting the file or not
                         while self.halt:
                             time.sleep(MESSAGE_SCAN_DELAY)
-
-                        self.receive_txt('[INFO] File from {} received successfully'.format(username))
 
 
                     elif msg_type == str(constants.MsgType.ERROR.value):
