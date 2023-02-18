@@ -64,6 +64,7 @@ class GroupConvoButton(QtWidgets.QPushButton):
     addMem_Triggered = QtCore.pyqtSignal()
     remvMem_Triggered = QtCore.pyqtSignal()
     view_memList_Triggered = QtCore.pyqtSignal()
+    readStatus_Triggered = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -81,6 +82,9 @@ class GroupConvoButton(QtWidgets.QPushButton):
 
         view_member_list = menu.addAction("Member list")
         view_member_list.triggered.connect(self.view_memList_Triggered)
+
+        read_status = menu.addAction("Check read status")
+        read_status.triggered.connect(self.readStatus_Triggered)#$here
 
         menu.exec_(self.mapToGlobal(event.pos()))
 
@@ -256,6 +260,7 @@ class Ui_Dialog(object):
                     newConvo.addMem_Triggered.connect(lambda: self.add_new_member(newConvo))
                     newConvo.remvMem_Triggered.connect(lambda: self.remv_member(newConvo))
                     newConvo.view_memList_Triggered.connect(lambda: self.view_member_list(newConvo))
+                    newConvo.readStatus_Triggered.connect(lambda: self.check_readStatus(newConvo))
 
                     # save the new conversation on the client side
                     self.client.add_convo(group_name, member_set)
@@ -299,20 +304,9 @@ class Ui_Dialog(object):
         self.client.view_member_list(convo.text())
 
     def check_readStatus(self, convo):
-        convo_name = convo.text()
-        read_members = ''
-        
-        if convo_name not in self.client.msg_read.keys():
-            self.update_chatbox("[INFO] You have not texted this person yet")
-            return
-        # loop through the member who have read the message
-        for mem in self.client.msg_read[convo_name]:#$here2
-            read_members = read_members + mem
-
-        if read_members == '':
-            self.update_chatbox("[INFO] Your latest message has not been read")
-        else:
-            self.update_chatbox("[INFO] Your latest message has been read by: " + read_members)
+        # tell the client about the check read status request
+        self.client.check_readStatus(convo.text())
+        #$here
 
     def chosen_conversation(self, button):
         self.clear_layout_color()

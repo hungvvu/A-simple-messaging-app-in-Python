@@ -407,7 +407,6 @@ class Server():
                         # if the username does not exist, send back an error message to the client
                         if not target_socket:
                             continue # do nothing for the time being
-                            #$here1
                     
                         else:
                             # forward the read receipt to the user

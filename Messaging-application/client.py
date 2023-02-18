@@ -160,6 +160,22 @@ class Client(QObject):
         # print the members to the screen
         self.text_message_received.emit(f"[INFO] Member list: {memL_str}")
 
+    def check_readStatus(self, convo_name):
+        read_members = ''
+        
+        if convo_name not in self.msg_read.keys():
+            self.text_message_received.emit("[INFO] You have not texted this person yet")
+            return
+        # loop through the member who have read the message
+        for mem in self.msg_read[convo_name]:
+            read_members = read_members + mem + '; '
+
+        if read_members == '':
+            self.text_message_received.emit("[INFO] Your latest message has not been read")
+        else:
+            # remove the last '; ' character
+            read_members = read_members[:-2]
+            self.text_message_received.emit("[INFO] Your latest message has been read by: " + read_members)
 
     # receive a text message from the server (with header + content) and parse it
     def receive_txt(self, client_socket):
