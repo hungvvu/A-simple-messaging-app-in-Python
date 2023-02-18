@@ -154,21 +154,32 @@ class Server():
 
         # send the new member username to the client
         client_socket.send(mem_uname['header'] + mem_uname['data'])
+
+    # take in convo_name in the form {'header': ..., 'data'}, and a UserInfo object
+    # send a read receipt to the client_socket
+    def send_readReceipt_to(self, client_socket, convo_name, receipt_sender):
+        # tell the client that a read receipt will be send next
+        client_socket.send(str(constants.MsgType.READ_RECEIPT.value).encode('utf-8'))
+
+        # send the convo name that this receipt apply to
+        # username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        client_socket.send(convo_name['header'] + convo_name['data'])
+
+        # send the original_sender
+        # sender_header = f"{len(original_sender):<{constants.HEADER_SIZE}}".encode('utf-8')
+        client_socket.send(receipt_sender.header + receipt_sender.data)
         
 
     # receive a text message from the client (with header + content) and parse it
     def receive_txt(self, client_socket):
-        try:
-            header = client_socket.recv(constants.HEADER_SIZE)
+        header = client_socket.recv(constants.HEADER_SIZE)
 
-            if not len(header):
-                return False
-            
-            message_length = int(header.decode().strip())
-
-            return {"header": header, "data": client_socket.recv(message_length)}
-        except:
+        if not len(header):
             return False
+        
+        message_length = int(header.decode().strip())
+
+        return {"header": header, "data": client_socket.recv(message_length)}
 
     def user_exist(self, user_info):
         for u in self.client_info.values():
@@ -267,9 +278,10 @@ class Server():
                         self.sockets_list.append(client)
                         
                         self.client_info[client] = UserInfo(user['header'], user['data'], True)
-
-                        print("[INFO] New connection from {}:{}, username: {}"\
-                              .format(*client_addr, user['data'].decode('utf-8')))
+                        client_addr_values = client_addr[:2]
+                        ip, port = client_addr_values
+                        print("[INFO] New connection from user {}, address: {}:{}"\
+                              .format(user['data'].decode('utf-8'), ip, port))
                     
 
                 # if s is a socket other than the server, we have gotten a new message to read
@@ -380,6 +392,27 @@ class Server():
                                                 self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
                                                             + "Your message will be stored and forwarded once they go online again")
                                                 
+
+
+                    elif msg_type == str(constants.MsgType.READ_RECEIPT.value): # a read receipt for an earlier message
+                        # get the conversation this receipt apply to
+                        convo_name = self.receive_txt(s)
+
+                        # get the user whom  this receipt is for
+                        target_user = self.receive_txt(s)
+
+                        # get the user socket
+                        target_socket = self.get_sock_by_uinfo(UserInfo(target_user['header'],target_user['data']))
+
+                        # if the username does not exist, send back an error message to the client
+                        if not target_socket:
+                            continue # do nothing for the time being
+                            #$here1
+                    
+                        else:
+                            # forward the read receipt to the user
+                            self.send_readReceipt_to(target_socket, convo_name, self.client_info[s])
+
 
 
                     elif msg_type == str(constants.MsgType.TASK.value): # a task to be executed

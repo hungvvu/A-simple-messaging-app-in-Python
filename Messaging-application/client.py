@@ -49,12 +49,14 @@ class Client(QObject):
         self.server.send(str(constants.MsgType.READ_RECEIPT.value).encode('utf-8'))
 
         # send the convo name that this receipt apply to
-        username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
-        self.server.send(username_header + username_header.encode('utf-8'))
-
+        # username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        # self.server.send(username_header + convo_name.encode('utf-8'))
+        self.send_txt_to_server(convo_name)
+#$here
         # send the original_sender
-        sender_header = f"{len(original_sender):<{constants.HEADER_SIZE}}".encode('utf-8')
-        self.server.send(sender_header + sender_header.encode('utf-8'))
+        # sender_header = f"{len(original_sender):<{constants.HEADER_SIZE}}".encode('utf-8')
+        # self.server.send(sender_header + original_sender.encode('utf-8'))
+        self.send_txt_to_server(original_sender)
 
     # add a new conversation
     def add_convo(self, convo_name, username_set):
@@ -244,13 +246,14 @@ class Client(QObject):
 
                         # parse the appended username into convo_name and "actual" username
                         parsed_uname = username.split('/')
+                        print(parsed_uname)
 
                         # if the parse has more than 2 element, this was originally a message sent to a group
                         if len(parsed_uname) >= 2:
                             self.send_readReceipt(parsed_uname[0], parsed_uname[1])
 
                         else:# just a direct message, username == conversation name on the sender side
-                            self.send_readReceipt(username, username)
+                            self.send_readReceipt(self.my_username, username)
 
 
 
