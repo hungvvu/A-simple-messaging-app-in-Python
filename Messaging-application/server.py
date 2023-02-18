@@ -71,8 +71,12 @@ class Conversation():
 
 class Server():
     def __init__(self, IP, PORT):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((IP, PORT)) # bind the port
+        self.server = socket.create_server((IP, PORT), family=socket.AF_INET6, dualstack_ipv6=True)
+
+        # # Set the option to also listen on an IPv4 address
+        # self.server.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+
+        # self.server.bind((IP, PORT)) # bind the port
 
         self.sockets_list = [self.server]
 
@@ -345,7 +349,7 @@ class Server():
                                     
                                 
                                 # loop through all the user in the conversation
-                                convo = self.find_convo(target_info['data']) #$here3
+                                convo = self.find_convo(target_info['data'])
                                 for u in convo.member_list:
                                     
                                     if not u.isEqualTo(user):
@@ -368,7 +372,6 @@ class Server():
                                                 target_socket.send(str(msg_type).encode('utf-8') + appended_user_header \
                                                                     + appended_username + timestamp + message['header'] + message['data'])
 
-                                            #$here
                                             else:
                                                 # buffer the message and inform the sender
                                                 target_user.msg_buffer.append(str(msg_type).encode('utf-8') + appended_user_header + appended_username \
@@ -547,7 +550,6 @@ class Server():
                     elif msg_type == '': # connection closed
                         s.close()
                         self.sockets_list.remove(s)
-                        #$here2
 
                         self.client_info[s].offline() # set the client's online status to offline
                         self.client_info[s].last_online = datetime.datetime.now().strftime("%H:%M") # store the user last online time
@@ -575,5 +577,6 @@ class Server():
             time.sleep(MESSAGE_SCAN_DELAY)
 
 # start the server
-server = Server(constants.IP, constants.PORT)
+host_name = socket.gethostname()
+server = Server('', constants.PORT)
 server.run()

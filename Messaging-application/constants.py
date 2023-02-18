@@ -1,8 +1,10 @@
 from enum import Enum
-
+import socket
 BUFFER_SIZE = 10
 HEADER_SIZE = 10
-IP = "127.0.0.1"
+
+IP = '127.0.0.1'
+HOST = socket.gethostname()
 PORT = 12345
 
 
