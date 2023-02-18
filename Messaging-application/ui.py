@@ -152,7 +152,9 @@ class Ui_Dialog(object):
         self.pushButton_2.setText(_translate("Dialog", "--New Conversation--"))
         self.pushButton.setText(_translate("Dialog", ">>"))
 
-
+    def closeEvent(self, event):
+        self.client.close()
+        event.accept()
 
     ## slots ##
 

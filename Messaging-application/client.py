@@ -332,6 +332,9 @@ class Client(QObject):
                 print('Exception: {}'.format(str(e)))
                 sys.exit()
         
+    def close(self):
+        self.server.close()
+
 
 # client = Client(IP, PORT, my_username)
 # client.run()

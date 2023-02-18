@@ -218,22 +218,32 @@ class Server():
                         # do something
                         continue
 
-                
-                    self.sockets_list.append(client)
+                    user_info = UserInfo(user['header'], user['data'])
+                    u_sock = self.get_sock_by_uinfo(user_info)
+                    # if the user already exist in the database
+                    if u_sock:
+                        # change the socket info of the user to the new socket
+                        self.client_info[client] = self.client_info.pop(u_sock)
 
-                    self.client_info[client] = UserInfo(user['header'], user['data'])
+                        # append the new socket connection into the socket list
+                        self.sockets_list.append(client)
+                    else:
+                        # add the user to the socket and info list if they don't exist
+                        self.sockets_list.append(client)
+
+                        self.client_info[client] = UserInfo(user['header'], user['data'])
 
                     print("New connection from {}:{}, username: {}".format(*client_addr, user['data'].decode('utf-8')))
                     
 
                 # if s is a socket other than the server, we have gotten a new message to read
                 else:
+
                     user = self.client_info[s]
 
                     # first, get the message type
                     msg_type = s.recv(1).decode('utf-8')
 
-                    
                     # handle the given message type accordingly
                     if msg_type == str(constants.MsgType.TEXT.value): # a normal text message
                         # second, get the user info
@@ -461,9 +471,18 @@ class Server():
                                         else:
                                             # send the message to the target client(s)
                                             self.send_remvMemTask_to(target_socket, convo_name, mem_uname)
+                        
+                                            
+                    elif msg_type == '': # connection closed
+                        s.close()
+                        self.sockets_list.remove(s)
 
-
-
+                    # except s.error as e:
+                    #     if e.errno == socket.errno.ECONNRESET:
+                    #         # This error means the socket has been closed by the client
+                    #         # Clean up the socket and move on to the next client
+                    #         s.close()
+                    #     continue
 
                     # handle exception sockets
                     for es in exception_sockets:
