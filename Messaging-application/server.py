@@ -22,6 +22,7 @@ class UserInfo():
         self.data = data
         self.online_status = online_status # the user default state is offline
         self.msg_buffer = [] # the message buffer to store messages when user go offline
+        self.last_online = '' # timestamp to when the user last online
 
     def __hash__(self):
         return hash((self.name, self.age))
@@ -237,6 +238,18 @@ class Server():
                         # append the new socket connection into the socket list
                         self.sockets_list.append(client)
 
+                        
+                        # forward the messages this client received while offline
+                        # inform the client about offline messages
+                        m_buffer = self.client_info[client].msg_buffer
+                        self.send_error_to(client, "[INFO] You received {} messages while you were offline:".format(len(m_buffer)))
+
+                        for msg in m_buffer:
+                            # send the message to the target client
+                            client.send(msg)
+
+
+                        # send the message to the target client(s)
                         print("[INFO] User {} went online, address: {}:{}"\
                               .format(user['data'].decode('utf-8'), *client_addr))
                     else:
@@ -305,8 +318,8 @@ class Server():
                                         target_user.msg_buffer.append(str(msg_type).encode('utf-8') + user.header + user.data \
                                                                            + timestamp + message['header'] + message['data'])
                                         
-                                        self.send_error_to(s, "[INFO] User {} is currently offline, ".format(target_user.data.decode('utf-8')) \
-                                                            + "your message will be stored and forwarded once they go online again")
+                                        self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
+                                                            + "Your message will be stored and forwarded once they go online again")
                                         
                                         #$here
 
@@ -354,8 +367,8 @@ class Server():
                                                 target_user.msg_buffer.append(str(msg_type).encode('utf-8') + user.header + user.data \
                                                                                 + timestamp + message['header'] + message['data'])
                                                 
-                                                self.send_error_to(s, "[INFO] User {} is currently offline, your message will be stored \
-                                                                    and forwarded once they go online again".format(target_user.data.decode('utf-8')))
+                                                self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
+                                                            + "Your message will be stored and forwarded once they go online again")
                                                 
 
 
@@ -529,6 +542,7 @@ class Server():
                         self.sockets_list.remove(s)
 
                         self.client_info[client].offline() # set the client's online status to offline
+                        self.client_info[client].last_online = datetime.datetime.now().strftime("%H:%M") # store the user last online time
 
 
                         print("[INFO] User {} went offline, address: {}:{}"\
