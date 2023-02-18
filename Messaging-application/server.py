@@ -17,9 +17,10 @@ def getLenHeader(encodedString):
 
 # wrapper for a user info, include the username and the header for that username
 class UserInfo():
-    def __init__(self, header, data):
+    def __init__(self, header, data, online_status=False):
         self.header = header
         self.data = data
+        self.online_status = online_status # the user default state is offline
 
     def __hash__(self):
         return hash((self.name, self.age))
@@ -28,6 +29,12 @@ class UserInfo():
         if self.data == thatUserInfo.data:
             return True
         return False
+    
+    def online(self):
+        self.online_status = True
+
+    def offline(self):
+        self.offline_status = False
 
     # def get_header(self):
     #     return self.header
@@ -224,6 +231,7 @@ class Server():
                     if u_sock:
                         # change the socket info of the user to the new socket
                         self.client_info[client] = self.client_info.pop(u_sock)
+                        self.client_info[client].online() # make the user online again
 
                         # append the new socket connection into the socket list
                         self.sockets_list.append(client)
@@ -233,8 +241,8 @@ class Server():
                     else:
                         # add the user to the socket and info list if they don't exist
                         self.sockets_list.append(client)
-
-                        self.client_info[client] = UserInfo(user['header'], user['data'])
+                        
+                        self.client_info[client] = UserInfo(user['header'], user['data'], True)
 
                         print("[INFO] New connection from {}:{}, username: {}"\
                               .format(*client_addr, user['data'].decode('utf-8')))
@@ -487,6 +495,9 @@ class Server():
                     elif msg_type == '': # connection closed
                         s.close()
                         self.sockets_list.remove(s)
+
+                        self.client_info[client].offline() # set the client's online status to offline
+
 
                         print("[INFO] User {} went offline, address: {}:{}"\
                               .format(user.data.decode('utf-8'), *client_addr))
