@@ -203,7 +203,13 @@ class Server():
         pos = 0
         for v in val_list:
             if (user_info.data == v.data):
-                return key_list[pos]
+                sock = key_list[pos]
+                return sock
+                # # check if the socket is valid or not first, socket can become invalid once the user go offline
+                # if sock in self.sockets_list:
+                #     return sock
+                # else:
+                #     return False
             pos += 1
 
         return False
@@ -321,7 +327,7 @@ class Server():
                                         self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
                                                             + "Your message will be stored and forwarded once they go online again")
                                         
-                                        #$here
+                                        
 
 
 
@@ -339,7 +345,7 @@ class Server():
                                     
                                 
                                 # loop through all the user in the conversation
-                                convo = self.find_convo(target_info['data'])
+                                convo = self.find_convo(target_info['data']) #$here3
                                 for u in convo.member_list:
                                     
                                     if not u.isEqualTo(user):
@@ -362,9 +368,10 @@ class Server():
                                                 target_socket.send(str(msg_type).encode('utf-8') + appended_user_header \
                                                                     + appended_username + timestamp + message['header'] + message['data'])
 
+                                            #$here
                                             else:
                                                 # buffer the message and inform the sender
-                                                target_user.msg_buffer.append(str(msg_type).encode('utf-8') + user.header + user.data \
+                                                target_user.msg_buffer.append(str(msg_type).encode('utf-8') + appended_user_header + appended_username \
                                                                                 + timestamp + message['header'] + message['data'])
                                                 
                                                 self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
@@ -540,9 +547,10 @@ class Server():
                     elif msg_type == '': # connection closed
                         s.close()
                         self.sockets_list.remove(s)
+                        #$here2
 
-                        self.client_info[client].offline() # set the client's online status to offline
-                        self.client_info[client].last_online = datetime.datetime.now().strftime("%H:%M") # store the user last online time
+                        self.client_info[s].offline() # set the client's online status to offline
+                        self.client_info[s].last_online = datetime.datetime.now().strftime("%H:%M") # store the user last online time
 
 
                         print("[INFO] User {} went offline, address: {}:{}"\
