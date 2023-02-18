@@ -215,11 +215,11 @@ class Ui_Dialog(object):
 
             button.setText(new_name)
 
-    def file_received(self, file_size):
+    def file_received(self, username, file_size):
         # create a message box
         message_box = QMessageBox(self.verticalLayoutWidget)
-        message_box.setWindowTitle("File Receive")
-        message_box.setText("Would you like to receive the file?")
+        message_box.setWindowTitle("File Received")
+        message_box.setText("User {} sent you a file, would you like to receive it?".format(username))
 
         # add buttons
         yes_button = message_box.addButton(QMessageBox.Yes)
@@ -232,7 +232,11 @@ class Ui_Dialog(object):
         # check which button was clicked
         if message_box.clickedButton() == yes_button:
             # handle "yes"
-            recv_status = self.client.recv_file(True, '/received/test_receive.txt', file_size)
+            # get the save path, for the time being let just make it a fixed path relative to the script
+            current_directory = os.path.dirname(os.path.abspath(__file__))
+            file_directory = os.path.join(current_directory, 'received', 'test_receive.txt')
+
+            recv_status = self.client.recv_file(True, file_directory, file_size)
         elif message_box.clickedButton() == no_button:
             # handle "no"
             recv_status = self.client.recv_file(False)
@@ -268,7 +272,7 @@ class Ui_Dialog(object):
 
             newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
             newConvo.readStatus_Triggered.connect(lambda: self.check_readStatus(newConvo))
-            newConvo.sendFile_Triggered.connect(lambda: self.send_file(newConvo)) #$here
+            newConvo.sendFile_Triggered.connect(lambda: self.send_file(newConvo))
             # rename the convo on the client side
             self.client.add_convo(target_username, {target_username})
     

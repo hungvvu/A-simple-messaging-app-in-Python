@@ -415,21 +415,25 @@ class Server():
 
 
 
-                    elif msg_type == str(constants.MsgType.FILE.value): # a file
+                    elif msg_type == str(constants.MsgType.FILE.value): # a file                        
                         # get the target user
-                        target_user = self.receive_txt(s)
+                        target_user_byte = self.receive_txt(s)
+                        target_user = UserInfo(target_user_byte['header'],target_user_byte['data'])
 
                         # get the user socket
-                        target_socket = self.get_sock_by_uinfo(UserInfo(target_user['header'],target_user['data']))
+                        target_socket = self.get_sock_by_uinfo(target_user)
 
                         # get the file size#$here
                         file_size = int(s.recv(constants.HEADER_SIZE).decode('utf-8'))
+
+                        print(f'[INFO] Received file from {user.data.decode("utf-8")} ' \
+                                    + f'to {target_user.data.decode("utf-8")}')
 
                         # send all the information above to the target
                         # inform the user that a file will be sent next
                         target_socket.send(str(constants.MsgType.FILE.value).encode('utf-8'))
 
-                        target_socket.send(target_user['header'] + target_user['data'])
+                        target_socket.send(user.header + user.data)
 
                         # Send the file size
                         target_socket.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here

@@ -41,7 +41,7 @@ class Client(QObject):
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
     rename_task_received = pyqtSignal(str, str)
-    file_message_received = pyqtSignal(int)
+    file_message_received = pyqtSignal(str, int)
 
     # take in a raw text string and send that to the server, encoded and with a header prepended
     def send_txt_to_server(self, text):
@@ -357,12 +357,28 @@ class Client(QObject):
 
                     elif msg_type == str(constants.MsgType.FILE.value):
                         #$here
-                        file_size = self.server.recv(constants.HEADER_SIZE).decode('utf-8')
-                        self.file_message_received.emit(int(file_size))
+                        # receive the sender's username
+                        sender_uname_header = self.server.recv(constants.HEADER_SIZE)
 
+                        # no data
+                        if not len(sender_uname_header):
+                            print('Connection closed by the server')
+                            sys.exit()
+                        
+                        # get the sender's username
+                        username_length = int(sender_uname_header.decode('utf-8').strip())
+
+                        username = self.server.recv(username_length).decode('utf-8')
+
+
+                        file_size = self.server.recv(constants.HEADER_SIZE).decode('utf-8')
+
+                        self.file_message_received.emit(username, int(file_size))
                         self.halt = True # halt until user made decision on accepting the file or not
                         while self.halt:
                             time.sleep(MESSAGE_SCAN_DELAY)
+
+                        self.receive_txt('[INFO] File from {} received successfully'.format(username))
 
 
                     elif msg_type == str(constants.MsgType.ERROR.value):
