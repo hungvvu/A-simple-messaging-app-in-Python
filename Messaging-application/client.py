@@ -195,7 +195,7 @@ class Client(QObject):
         except:
             return False
 
-    def recv_file(self, accept, filedir: str, file_size):
+    def recv_file(self, accept, filedir=None, file_size=None):
         if accept:# the client accepted the file
             # Initialize a variable to keep track of the total number of bytes received
             total_received = 0

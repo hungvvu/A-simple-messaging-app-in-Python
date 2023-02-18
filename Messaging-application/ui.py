@@ -92,6 +92,7 @@ class GroupConvoButton(QtWidgets.QPushButton):
 class DirectConvoButton(QtWidgets.QPushButton):
     # signals for the direct convo menu
     readStatus_Triggered = QtCore.pyqtSignal()
+    sendFile_Triggered = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -100,6 +101,9 @@ class DirectConvoButton(QtWidgets.QPushButton):
         menu = QtWidgets.QMenu(self)
         read_status = menu.addAction("Check read status")
         read_status.triggered.connect(self.readStatus_Triggered)
+
+        send_file = menu.addAction("Send file")
+        send_file.triggered.connect(self.sendFile_Triggered)
     
         menu.exec_(self.mapToGlobal(event.pos()))
 
@@ -213,7 +217,7 @@ class Ui_Dialog(object):
 
     def file_received(self, file_size):
         # create a message box
-        message_box = QMessageBox(self)
+        message_box = QMessageBox(self.verticalLayoutWidget)
         message_box.setWindowTitle("File Receive")
         message_box.setText("Would you like to receive the file?")
 
@@ -228,10 +232,10 @@ class Ui_Dialog(object):
         # check which button was clicked
         if message_box.clickedButton() == yes_button:
             # handle "yes"
-            recv_status = self.client.recv_file(True)#$here
+            recv_status = self.client.recv_file(True, '/received/test_receive.txt', file_size)
         elif message_box.clickedButton() == no_button:
             # handle "no"
-            recv_status = self.client.recv_file(False, '/receive/test_receive.txt', file_size)
+            recv_status = self.client.recv_file(False)
 
         if recv_status:
             # continue the client's execution
@@ -264,6 +268,7 @@ class Ui_Dialog(object):
 
             newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
             newConvo.readStatus_Triggered.connect(lambda: self.check_readStatus(newConvo))
+            newConvo.sendFile_Triggered.connect(lambda: self.send_file(newConvo)) #$here
             # rename the convo on the client side
             self.client.add_convo(target_username, {target_username})
     
@@ -335,6 +340,14 @@ class Ui_Dialog(object):
     def check_readStatus(self, convo):
         # tell the client about the check read status request
         self.client.check_readStatus(convo.text())
+
+    def send_file(self, convo):
+        # ask user for file name
+        file_dir, ok = QInputDialog.getText(None, "Sending file", "File directory: ")
+
+        if ok:
+            # tell the client to send the file
+            self.client.send_file_to(convo.text(), file_dir)
 
     def chosen_conversation(self, button):
         self.clear_layout_color()
