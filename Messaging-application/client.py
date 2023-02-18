@@ -246,7 +246,6 @@ class Client(QObject):
 
                         # parse the appended username into convo_name and "actual" username
                         parsed_uname = username.split('/')
-                        print(parsed_uname)
 
                         # if the parse has more than 2 element, this was originally a message sent to a group
                         if len(parsed_uname) >= 2:

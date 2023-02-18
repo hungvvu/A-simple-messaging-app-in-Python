@@ -83,7 +83,21 @@ class GroupConvoButton(QtWidgets.QPushButton):
         view_member_list.triggered.connect(self.view_memList_Triggered)
 
         menu.exec_(self.mapToGlobal(event.pos()))
+
     
+class DirectConvoButton(QtWidgets.QPushButton):
+    # signals for the direct convo menu
+    readStatus_Triggered = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def contextMenuEvent(self, event):
+        menu = QtWidgets.QMenu(self)
+        read_status = menu.addAction("Check read status")
+        read_status.triggered.connect(self.readStatus_Triggered)#$here
+    
+        menu.exec_(self.mapToGlobal(event.pos()))
 
 
 class Ui_Dialog(object):
@@ -206,7 +220,7 @@ class Ui_Dialog(object):
 
     # for adding new direct messages conversations
     def add_new_convo(self):
-        newConvo = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        newConvo = DirectConvoButton(self.verticalLayoutWidget)
         target_username, ok = QInputDialog.getText(None, "Adding new conversation", "Target's username: ")
 
         if ok:
@@ -216,7 +230,7 @@ class Ui_Dialog(object):
             newConvo.setText(target_username)
 
             newConvo.clicked.connect(lambda: self.chosen_conversation(newConvo)) # connect the button with the signal for choosing conversations and pass in the target username
-
+            newConvo.readStatus_Triggered.connect(lambda: self.check_readStatus(newConvo))
             # rename the convo on the client side
             self.client.add_convo(target_username, {target_username})
     
@@ -283,6 +297,22 @@ class Ui_Dialog(object):
     def view_member_list(self, convo):
         # tell the client about the view request
         self.client.view_member_list(convo.text())
+
+    def check_readStatus(self, convo):
+        convo_name = convo.text()
+        read_members = ''
+        
+        if convo_name not in self.client.msg_read.keys():
+            self.update_chatbox("[INFO] You have not texted this person yet")
+            return
+        # loop through the member who have read the message
+        for mem in self.client.msg_read[convo_name]:#$here2
+            read_members = read_members + mem
+
+        if read_members == '':
+            self.update_chatbox("[INFO] Your latest message has not been read")
+        else:
+            self.update_chatbox("[INFO] Your latest message has been read by: " + read_members)
 
     def chosen_conversation(self, button):
         self.clear_layout_color()
