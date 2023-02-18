@@ -13,7 +13,7 @@ class MsgType(Enum):
     ERROR = 0
     TEXT = 1
     TASK = 2
-    CONFIRMATION = 3
+    READ_RECEIPT = 3
 
 class TaskType(Enum):
     ADD_CONVO = 1

@@ -44,6 +44,18 @@ class Client(QObject):
         header = f"{len(text):<{constants.HEADER_SIZE}}".encode('utf-8')
         self.server.send(header + text.encode('utf-8'))
 
+    def send_readReceipt(self, convo_name, original_sender):
+        # tell the server that a read receipt will be send next
+        self.server.send(str(constants.MsgType.READ_RECEIPT.value).encode('utf-8'))
+
+        # send the convo name that this receipt apply to
+        username_header = f"{len(convo_name):<{constants.HEADER_SIZE}}".encode('utf-8')
+        self.server.send(username_header + username_header.encode('utf-8'))
+
+        # send the original_sender
+        sender_header = f"{len(original_sender):<{constants.HEADER_SIZE}}".encode('utf-8')
+        self.server.send(sender_header + sender_header.encode('utf-8'))
+
     # add a new conversation
     def add_convo(self, convo_name, username_set):
         self.conversations[convo_name] = username_set
@@ -229,6 +241,32 @@ class Client(QObject):
 
                         # emit a message receive signal
                         self.text_message_received.emit(f"[{timestamp}, {username}] > {message}")
+
+                        # parse the appended username into convo_name and "actual" username
+                        parsed_uname = username.split('/')
+
+                        # if the parse has more than 2 element, this was originally a message sent to a group
+                        if len(parsed_uname) >= 2:
+                            self.send_readReceipt(parsed_uname[0], parsed_uname[1])
+
+                        else:# just a direct message, username == conversation name on the sender side
+                            self.send_readReceipt(username, username)
+
+
+
+                    elif msg_type == str(constants.MsgType.READ_RECEIPT.value):
+                        # get the conversation this receipt apply to
+                        convo_name = self.receive_txt(self.server)
+                        convo_name_str = convo_name['data'].decode('utf-8')
+
+                        # get the user who sent this receipt
+                        username = self.receive_txt(self.server)
+                        username_str = username['data'].decode('utf-8')
+
+                        # add the user to the msg_read list for this conversation
+                        self.msg_read[convo_name_str].append(username_str)
+
+
 
                     elif msg_type == str(constants.MsgType.ERROR.value):
                         # receive the sender's username
