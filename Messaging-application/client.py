@@ -32,6 +32,9 @@ class Client(QObject):
         # dictionary of added conversations, with the conversation name as keys and lists of coresponding username as values
         self.conversations = {}
 
+        # store all conversations and a list of user who have read this user's newest message
+        self.msg_read = {}
+
     # signals for handling message receiving
     text_message_received = pyqtSignal(str)
     rename_task_received = pyqtSignal(str, str)
@@ -188,6 +191,9 @@ class Client(QObject):
         message = txt.encode('utf-8')
         message_header = f"{len(message):<{constants.HEADER_SIZE}}".encode('utf-8')
         self.server.send(message_header + message)
+
+        # empty the message read list for this conversation because there is a new message
+        self.msg_read[target_username] = []
 
     @pyqtSlot()
     def run(self):
