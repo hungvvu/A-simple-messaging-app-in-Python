@@ -227,13 +227,17 @@ class Server():
 
                         # append the new socket connection into the socket list
                         self.sockets_list.append(client)
+
+                        print("[INFO] User {} went online, address: {}:{}"\
+                              .format(user['data'].decode('utf-8'), *client_addr))
                     else:
                         # add the user to the socket and info list if they don't exist
                         self.sockets_list.append(client)
 
                         self.client_info[client] = UserInfo(user['header'], user['data'])
 
-                    print("New connection from {}:{}, username: {}".format(*client_addr, user['data'].decode('utf-8')))
+                        print("[INFO] New connection from {}:{}, username: {}"\
+                              .format(*client_addr, user['data'].decode('utf-8')))
                     
 
                 # if s is a socket other than the server, we have gotten a new message to read
@@ -257,7 +261,7 @@ class Server():
 
                         # if there is no message, close the connection
                         if message is False:
-                            print('Closed connection from: {}'.format(self.client_info[s].data.decode('utf-8')))
+                            print('[INFO] Closed connection from: {}'.format(self.client_info[s].data.decode('utf-8')))
                             self.sockets_list.remove(s)
                             del self.client_info[s]
 
@@ -271,7 +275,7 @@ class Server():
 
                                 # if the username does not exist, send back an error message to the client
                                 if not target_socket:
-                                    error_msg = f"Error: \"{target_info['data'].decode('utf-8')}\" username not found".encode()
+                                    error_msg = f"[Error] \"{target_info['data'].decode('utf-8')}\" username not found".encode()
                                     error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
                                     s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
                             
@@ -280,7 +284,8 @@ class Server():
                                     # send the message to the target client(s)
                                     target_socket.send(str(msg_type).encode('utf-8') + user.header + user.data + timestamp + message['header'] + message['data'])
 
-                                    print(f'{timestamp.decode("utf-8")}, received message from {user.data.decode("utf-8")}: {message["data"].decode("utf-8")}')
+                                    print(f'[INFO] Received message from {user.data.decode("utf-8")}: '\
+                                          + f'{message["data"].decode("utf-8")}')
 
                             # else it is a group message
                             else:
@@ -290,7 +295,7 @@ class Server():
                                 appended_username = (group_name + '/' + user.data.decode('utf-8')).encode('utf-8')
                                 appended_user_header = getLenHeader(appended_username)
 
-                                print(f'[INFO] {timestamp.decode("utf-8")}, received message from {user.data.decode("utf-8")} ' \
+                                print(f'[INFO] Received message from {user.data.decode("utf-8")} ' \
                                     + f'to group {group_name}: {message["data"].decode("utf-8")}')
                                     
                                 
@@ -304,7 +309,7 @@ class Server():
 
                                         # if the username does not exist, send back an error message to the client
                                         if not target_socket:
-                                            error_msg = f"Error: \"{u.data.decode('utf-8')}\" username not found".encode()
+                                            error_msg = f"[Error] \"{u.data.decode('utf-8')}\" username not found".encode()
                                             error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
                                             s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
                                     
@@ -354,6 +359,9 @@ class Server():
                                 
                                 self.conversations[convo_name['data']] = Conversation(convo_name['data'], conversation_info)
 
+                                print("[TASK] New conversation {} added by {}, members: {}"\
+                                    .format(convo_name['data'].decode('utf-8'), user.data.decode('utf-8'), username_set))
+
                                 if (len(conversation_info) != 1): # if this is a group chat (more than 2 people), add the person who created the group as a group owner
                                     self.conversations[convo_name['data']].owner = user
                         
@@ -391,9 +399,12 @@ class Server():
                                             # send the message to the target client(s)
                                             self.send_renameTask_to(target_socket, old_name, new_name)
 
+                                print("[TASK] Conversation {} renamed to {} by {}"\
+                                    .format(old_name['data'].decode['utf-8'], new_name['data'].decode['utf-8'], user.data.decode('utf-8')))
+
                             else:
                                 # send an error message to the user
-                                self.send_error_to(s, "Error: No required permission for name change")
+                                self.send_error_to(s, "[Error] No required permission for name change")
 
                                 ## send a task to the user to revert the name change
                                 # inform the client that a task will be sent next
@@ -476,6 +487,9 @@ class Server():
                     elif msg_type == '': # connection closed
                         s.close()
                         self.sockets_list.remove(s)
+
+                        print("[INFO] User {} went offline, address: {}:{}"\
+                              .format(user.data.decode('utf-8'), *client_addr))
 
                     # except s.error as e:
                     #     if e.errno == socket.errno.ECONNRESET:
