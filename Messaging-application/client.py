@@ -355,8 +355,10 @@ class Client(QObject):
                         username = self.receive_txt(self.server)
                         username_str = username['data'].decode('utf-8')
 
-                        # add the user to the msg_read list for this conversation
-                        self.msg_read[convo_name_str].append(username_str)
+                        # add the user to the msg_read list for this conversation if they are not in the list yet
+                        if username_str not in self.msg_read[convo_name_str]:
+
+                            self.msg_read[convo_name_str].append(username_str)
 
 
                     elif msg_type == str(constants.MsgType.FILE.value):
@@ -470,7 +472,7 @@ class Client(QObject):
                             # check if the member has the groupchat on their side already or not
                             if convo_name_str in self.conversations.keys():
                                 # remove the member if they are in the conversation
-                                if mem_uname in self.conversations[convo_name]:
+                                if mem_uname in self.conversations[convo_name_str]:
                                     # add the member to the local dictionary
                                     self.conversations[convo_name_str].remove(newMem_uname_str)
 

@@ -67,7 +67,12 @@ class Conversation():
     def remove_member(self, user):
         index = self.indexOfMemberWith(user.isEqualTo)
         del self.member_list[index]
-        
+
+    def has_member(self, user):
+        for u in self.member_list:
+            if u.isEqualTo(user):
+                return True
+        return False
 
 class Server():
     def __init__(self, IP, PORT):
@@ -269,6 +274,9 @@ class Server():
                         for msg in m_buffer:
                             # send the message to the target client
                             client.send(msg)
+                        
+                        # empty the buffer
+                        self.client_info[client].msg_buffer = []
 
 
                         # send the message to the target client(s)
@@ -343,10 +351,6 @@ class Server():
                                         
                                         self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
                                                             + "Your message will be stored and forwarded once they go online again")
-                                        
-                                        
-
-
 
 
                             # else it is a group message
@@ -363,36 +367,39 @@ class Server():
                                 
                                 # loop through all the user in the conversation
                                 convo = self.find_convo(target_info['data'])
-                                for u in convo.member_list:
-                                    
-                                    if not u.isEqualTo(user):
-                                        # get the user socket
-                                        target_socket = self.get_sock_by_uinfo(u)
+                                if convo.has_member(user): # if the user is in this conversation
+                                    for u in convo.member_list:
+                                        
+                                        if not u.isEqualTo(user):
+                                            # get the user socket
+                                            target_socket = self.get_sock_by_uinfo(u)
 
-                                        # if the username does not exist, send back an error message to the client
-                                        if not target_socket:
-                                            error_msg = f"[ERROR] \"{u.data.decode('utf-8')}\" username not found".encode()
-                                            error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
-                                            s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
-                                    
-                                    
-                                        else:
-                                            # get the user info
-                                            target_user = self.client_info[target_socket]
-                                            # if the user is online
-                                            if target_user.online_status:
-                                                # send the message to the target client(s)
-                                                target_socket.send(str(msg_type).encode('utf-8') + appended_user_header \
-                                                                    + appended_username + timestamp + message['header'] + message['data'])
-
+                                            # if the username does not exist, send back an error message to the client
+                                            if not target_socket:
+                                                error_msg = f"[ERROR] \"{u.data.decode('utf-8')}\" username not found".encode()
+                                                error_header = f"{len(error_msg):<{constants.HEADER_SIZE}}".encode()
+                                                s.send(str(constants.MsgType.ERROR.value).encode('utf-8') + user.header + user.data + timestamp + error_header + error_msg)
+                                        
+                                        
                                             else:
-                                                # buffer the message and inform the sender
-                                                target_user.msg_buffer.append(str(msg_type).encode('utf-8') + appended_user_header + appended_username \
-                                                                                + timestamp + message['header'] + message['data'])
-                                                
-                                                self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
-                                                            + "Your message will be stored and forwarded once they go online again")
-                                                
+                                                # get the user info
+                                                target_user = self.client_info[target_socket]
+                                                # if the user is online
+                                                if target_user.online_status:
+                                                    # send the message to the target client(s)
+                                                    target_socket.send(str(msg_type).encode('utf-8') + appended_user_header \
+                                                                        + appended_username + timestamp + message['header'] + message['data'])
+
+                                                else:
+                                                    # buffer the message and inform the sender
+                                                    target_user.msg_buffer.append(str(msg_type).encode('utf-8') + appended_user_header + appended_username \
+                                                                                    + timestamp + message['header'] + message['data'])
+                                                    
+                                                    self.send_error_to(s, "[INFO] User {} is currently offline, last online at {}\n".format(target_user.data.decode('utf-8'), target_user.last_online) \
+                                                                + "Your message will be stored and forwarded once they go online again")
+                                                    
+                                else:
+                                    self.send_error_to(s, "[ERROR] You are not in this conversation")
 
 
                     elif msg_type == str(constants.MsgType.READ_RECEIPT.value): # a read receipt for an earlier message
@@ -426,7 +433,7 @@ class Server():
                         # get the file name
                         file_name = self.receive_txt(s)
 
-                        # get the file size#$here
+                        # get the file size
                         file_size = int(s.recv(constants.HEADER_SIZE).decode('utf-8'))
 
                         print(f'[INFO] Received file from {user.data.decode("utf-8")} ' \
@@ -441,7 +448,7 @@ class Server():
                         target_socket.send(file_name['header'] + file_name['data'])
 
                         # Send the file size
-                        target_socket.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))#$here
+                        target_socket.send(f"{file_size:<{constants.HEADER_SIZE}}".encode('utf-8'))
 
                         # Receive the file and forward it to the target in small chunks
                         total_received = 0
@@ -538,7 +545,7 @@ class Server():
                                             self.send_renameTask_to(target_socket, old_name, new_name)
 
                                 print("[TASK] Conversation {} renamed to {} by {}"\
-                                    .format(old_name['data'].decode['utf-8'], new_name['data'].decode['utf-8'], user.data.decode('utf-8')))
+                                    .format(old_name['data'].decode('utf-8'), new_name['data'].decode('utf-8'), user.data.decode('utf-8')))
 
                             else:
                                 # send an error message to the user
@@ -587,6 +594,9 @@ class Server():
                                         else:
                                             # send the message to the target client(s)
                                             self.send_addMemTask_to(target_socket, convo_name, mem_uname)
+                            else:
+                                # send an error message to the user
+                                self.send_error_to(s, "[ERROR] No required permission for member management")
 
 
                         elif task_type == str(constants.TaskType.REMV_MEMBER.value):
@@ -620,6 +630,10 @@ class Server():
                                         else:
                                             # send the message to the target client(s)
                                             self.send_remvMemTask_to(target_socket, convo_name, mem_uname)
+
+                            else:
+                                # send an error message to the user
+                                self.send_error_to(s, "[ERROR] No required permission for member management")
                         
                                             
                     elif msg_type == '': # connection closed
