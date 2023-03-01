@@ -339,5 +339,5 @@ class Client(QObject):
         self.server.close()
 
 
-client = Client('::1', constants.PORT, 'testIPv6')
+client = Client(constants.HOST, constants.PORT, 'testIPv6')
 client.run()
