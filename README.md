@@ -27,11 +27,67 @@ This project is an assignment for the ELEC-C7420, Principles of Networking cours
   - The receiver can decide if he/she wants to receive or discard the file.
 - Voluntary extra features 
   - (somewhat) User-friendly and intuitive UI.
+  - Server logs that show all messages and tasks carried out.
   - Send message by clicking Enter after the user finished typing.
   - Dedicated message box and conversation view.
   - Selecting active conversation with the mouse.
 
 **Assignment Outcome:** 20/20 points + 2 Bonus points. Overall, I am quite happy with how the project turned out. I was able to learn a lot from this project and build something fun.
   
-## Application Walk-through
-![UI Image](./Documentation/Photo%20gallery/UI%20design/rough%20UI%20design.png)
+## Brief Application Walk-through
+When you first open the application you will see the following interface. The app has three main elements: a conversation list, a message viewer, and a text box for entering messages. 
+
+![Main View](./Documentation/readme_images/main_view.png)
+
+The user can select a conversation from the list by clicking on it, which will turn that conversation green and indicate that it is active.
+
+![select convo](./Documentation/readme_images/select_convo.png)
+
+While a conversation is active, any messages send through the text box will be sent to that active conversation.
+
+Now, let's send our a message to John Doe. The conversation with John Doe is already active, so all we need to do now is type something and send it to him.
+
+![typing messages](./Documentation/readme_images/type_messages.png)
+
+Here's what the message look like on our side:
+
+![message view you](./Documentation/readme_images/firstMsg_You.png)
+
+And here's the same message on John's side:
+
+![message view John](./Documentation/readme_images/firstMsg_John.png)
+
+It's starting to get a bit boring with just two people, so let's add some more people to the party. We can create a new group by clicking on the "New Conversation" button and select "Group messaging". We will then get prompted with the following box.
+
+![group creation](./Documentation/readme_images/group_creation.png)
+
+We just need to enter in the group name and its member. Notice that a ";" sign is used to separate member usernames. Once created, we can send messages to everyone in the group, which will be displayed on the receiver's side as "\<Group name\>/\<Sender's name\>".
+
+![group messaging](./Documentation/readme_images/group_messaging.png)
+  
+The app also allow group management features which are available to the owner. If a member other than the owner try to access the group management, they will be informed that they don't have the required permission to do so. To access the menu, right-click on the group in the conversation list.
+  
+![group menu](./Documentation/readme_images/group_menu.png)
+
+As an example, let's try renaming the group to a new name. A box is displayed for entering in the name, let's just call the group "New Name" for now.
+
+![group menu](./Documentation/readme_images/renaming_group.png)
+
+After renaming, the group will be displayed on the UI with its new name, and the messages sent to the group will also show the updated name. Let's send another message to the group to see the change.
+
+![group new name](./Documentation/readme_images/newGroupName_msg.png)
+
+Right-clicking on a direct message conversation will show a similar menu to the group management but with only two options: "send file" and "check read status". Let's try sending a file to our friend John Doe.
+
+![file sending](./Documentation/readme_images/file_sending.png)
+
+After entering in a file directory, the file will be sent to the target user. John will see the following pop-up notification about the file. He can then decide to either receive the file or discard it.
+
+![file receiving](./Documentation/readme_images/file_receiving.png)
+
+If he chooses to receive the file, it will be saved in the default directory "./received", relative to where the application file is stored.
+
+Lastly, it is possible to check the server logs as the admin, which contains the history of all messages and actions performed by the clients.
+
+![file receiving](./Documentation/readme_images/server_log.png)
+
